@@ -72,12 +72,21 @@ const ReadingView: React.FC = () => {
 
             mediaRecorder.onstop = () => {
                 const blob = new Blob(audioChunksRef.current, { type: options.mimeType });
+                // Luôn dừng các track để tắt icon ghi âm trên tab trình duyệt
+                stream.getTracks().forEach(track => track.stop());
+
+                // Xử lý trường hợp ghi âm quá ngắn hoặc không có dữ liệu
+                if (blob.size === 0) {
+                    console.warn("Bản ghi âm trống, có thể do ghi âm quá ngắn.");
+                    setError("Bản ghi âm quá ngắn. Bé hãy thử lại và đọc to, rõ ràng hơn nhé!");
+                    setStatus('error');
+                    return;
+                }
+
                 const url = URL.createObjectURL(blob);
                 setAudioBlob(blob);
                 setAudioUrl(url);
                 setStatus('recorded');
-                // Dừng các track để tắt icon ghi âm trên tab trình duyệt
-                stream.getTracks().forEach(track => track.stop());
             };
 
             mediaRecorderRef.current = mediaRecorder;
@@ -104,7 +113,7 @@ const ReadingView: React.FC = () => {
     };
 
     const stopRecording = () => {
-        if (mediaRecorderRef.current) {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
             mediaRecorderRef.current.stop();
         }
     };
@@ -134,7 +143,7 @@ const ReadingView: React.FC = () => {
             } else {
                 setError("Đã xảy ra lỗi không xác định.");
             }
-            setStatus('error');
+            setStatus('error'); // Chuyển sang trạng thái lỗi để hiển thị nút thử lại
         }
     };
     
@@ -166,8 +175,6 @@ const ReadingView: React.FC = () => {
                     analysisResult && <ReadingFeedback passage={question.passage} analysis={analysisResult} />
                 )}
             </Card>
-
-            {error && <Card className="bg-danger-light text-danger-dark p-4 mb-4">{error}</Card>}
 
             <div className="flex flex-col items-center gap-4">
                 {status === 'ready_to_record' && (
@@ -204,7 +211,7 @@ const ReadingView: React.FC = () => {
                     </div>
                 )}
                 {status === 'feedback' && (
-                    <div className="w-full max-w-md space-y-4">
+                    <div className="w-full max-w-md space-y-4 animate-fade-in-up">
                         {newlyEarnedBadge && (
                            <BadgeUnlockCard badge={newlyEarnedBadge} />
                         )}
@@ -213,16 +220,27 @@ const ReadingView: React.FC = () => {
                                 Thử lại
                             </Button>
                             <Button onClick={handleRestart} variant="primary" className="w-full sm:w-auto">
-                                Đọc đoạn văn khác
+                                Đọc đoạn khác
+                            </Button>
+                             <Button onClick={handleBackToSubjects} variant="secondary" className="w-full sm:w-auto">
+                                Về trang chủ
                             </Button>
                         </div>
                      </div>
                 )}
-                { (status === 'feedback' || status === 'error' && error !== 'Không thể truy cập micro. Bé hãy kiểm tra lại và cho phép ứng dụng dùng micro nhé.') &&
-                     <Button onClick={handleBackToSubjects} variant="secondary">
-                        Về trang chủ
-                    </Button>
-                }
+                {status === 'error' && (
+                    <div className="w-full max-w-md space-y-4 animate-fade-in-up">
+                        <Card className="bg-danger-light text-danger-dark p-4">{error}</Card>
+                         <div className="flex flex-col sm:flex-row items-center gap-4">
+                            <Button onClick={handleTryAgain} variant="primary" className="w-full sm:w-auto">
+                                Thử lại
+                            </Button>
+                             <Button onClick={handleBackToSubjects} variant="secondary" className="w-full sm:w-auto">
+                                Về trang chủ
+                            </Button>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
