@@ -2,12 +2,55 @@ import { GoogleGenAI, Type, Modality } from "@google/genai";
 import { QUIZ_LENGTH } from '../constants';
 import { Question, ReadingAnalysis, QuizStats } from '../types';
 
-const API_KEY = process.env.API_KEY;
-if (!API_KEY) {
-    throw new Error("Chưa cấu hình khóa API cho Gemini.");
+// Lấy tất cả các khóa API từ biến môi trường và lọc ra những khóa hợp lệ.
+const API_KEYS = [
+    process.env.API_KEY,
+    process.env.API_KEY_2,
+    process.env.API_KEY_3
+].filter((key): key is string => !!key && key.trim() !== '');
+
+if (API_KEYS.length === 0) {
+    throw new Error("Chưa cấu hình khóa API cho Gemini. Vui lòng thêm ít nhất một khóa API (API_KEY, API_KEY_2, API_KEY_3) vào mục 'Secrets'.");
 }
 
-const ai = new GoogleGenAI({ apiKey: API_KEY });
+let currentKeyIndex = 0;
+
+/**
+ * Một hàm bao bọc (wrapper) để thực hiện các lệnh gọi đến Gemini API với logic thử lại và luân chuyển khóa.
+ * @param request Một hàm nhận vào một instance của GoogleGenAI và trả về một promise chứa kết quả gọi API.
+ * @returns Kết quả từ lệnh gọi API thành công.
+ * @throws Ném ra lỗi nếu tất cả các khóa API đều thất bại.
+ */
+const callGeminiWithRetry = async <T>(
+    request: (ai: GoogleGenAI) => Promise<T>
+): Promise<T> => {
+    const maxRetries = API_KEYS.length;
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+        const apiKey = API_KEYS[currentKeyIndex];
+        const ai = new GoogleGenAI({ apiKey });
+
+        try {
+            console.log(`Đang thử yêu cầu với khóa API #${currentKeyIndex + 1}`);
+            const response = await request(ai);
+            // Yêu cầu thành công, trả về kết quả.
+            return response;
+        } catch (error) {
+            console.warn(`Khóa API #${currentKeyIndex + 1} thất bại.`, error);
+            // Chuyển sang khóa tiếp theo để thử lại.
+            currentKeyIndex = (currentKeyIndex + 1) % API_KEYS.length;
+
+            // Nếu đây là lần thử cuối cùng, ném ra lỗi.
+            if (attempt === maxRetries - 1) {
+                console.error("Tất cả các khóa API đều thất bại.");
+                // Ném lại lỗi cuối cùng để hàm gọi có thể xử lý.
+                throw error;
+            }
+        }
+    }
+    // Dòng này không nên đạt được nếu có ít nhất một khóa API, nhưng để đảm bảo an toàn.
+    throw new Error("Tất cả các khóa API đều không hợp lệ hoặc đã xảy ra lỗi không xác định.");
+};
+
 
 export const generateQuiz = async (subjectName: string, topicName: string): Promise<{ passage: string | null; questions: Question[] }> => {
     try {
@@ -109,14 +152,14 @@ export const generateQuiz = async (subjectName: string, topicName: string): Prom
             };
         }
 
-        const response = await ai.models.generateContent({
+        const response = await callGeminiWithRetry((ai) => ai.models.generateContent({
             model: "gemini-2.5-flash",
             contents: prompt,
             config: {
                 responseMimeType: "application/json",
                 responseSchema: responseSchema,
             },
-        });
+        }));
 
         const jsonText = response.text.trim();
         const data = JSON.parse(jsonText);
@@ -189,14 +232,14 @@ export const generateExam = async (subjectName: string, durationPreference: 'sho
             required: ["timeLimitInSeconds", "questions"]
         };
 
-        const response = await ai.models.generateContent({
+        const response = await callGeminiWithRetry((ai) => ai.models.generateContent({
             model: "gemini-2.5-flash",
             contents: prompt,
             config: {
                 responseMimeType: "application/json",
                 responseSchema: responseSchema,
             },
-        });
+        }));
 
         const jsonText = response.text.trim();
         const data = JSON.parse(jsonText);
@@ -236,36 +279,38 @@ export const analyzeReading = async (passage: string, audioBase64: string, mimeT
             QUAN TRỌNG: Trả về kết quả dưới dạng một đối tượng JSON duy nhất. KHÔNG trả về bất kỳ văn bản nào khác ngoài JSON.
         `;
         
-        const response = await ai.models.generateContent({
+        const responseSchema = {
+            type: Type.OBJECT,
+            properties: {
+                accuracy: { type: Type.NUMBER },
+                incorrectWords: {
+                    type: Type.ARRAY,
+                    items: {
+                        type: Type.OBJECT,
+                        properties: {
+                            expected: { type: Type.STRING },
+                            actual: { type: Type.STRING }
+                        },
+                        required: ["expected", "actual"]
+                    }
+                },
+                unclearWords: {
+                    type: Type.ARRAY,
+                    items: { type: Type.STRING }
+                },
+                feedback: { type: Type.STRING }
+            },
+            required: ["accuracy", "incorrectWords", "unclearWords", "feedback"]
+        };
+
+        const response = await callGeminiWithRetry((ai) => ai.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: { parts: [{ text: prompt }, audioPart] },
             config: {
                 responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        accuracy: { type: Type.NUMBER },
-                        incorrectWords: {
-                            type: Type.ARRAY,
-                            items: {
-                                type: Type.OBJECT,
-                                properties: {
-                                    expected: { type: Type.STRING },
-                                    actual: { type: Type.STRING }
-                                },
-                                required: ["expected", "actual"]
-                            }
-                        },
-                        unclearWords: {
-                            type: Type.ARRAY,
-                            items: { type: Type.STRING }
-                        },
-                        feedback: { type: Type.STRING }
-                    },
-                    required: ["accuracy", "incorrectWords", "unclearWords", "feedback"]
-                }
+                responseSchema: responseSchema,
             }
-        });
+        }));
 
         const jsonText = response.text.trim();
         return JSON.parse(jsonText) as ReadingAnalysis;
@@ -278,7 +323,7 @@ export const analyzeReading = async (passage: string, audioBase64: string, mimeT
 
 export const generateSpeech = async (text: string): Promise<string> => {
     try {
-        const response = await ai.models.generateContent({
+        const response = await callGeminiWithRetry((ai) => ai.models.generateContent({
             model: "gemini-2.5-flash-preview-tts",
             contents: [{ parts: [{ text }] }],
             config: {
@@ -289,7 +334,7 @@ export const generateSpeech = async (text: string): Promise<string> => {
                     },
                 },
             },
-        });
+        }));
 
         const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
         if (!base64Audio) {
