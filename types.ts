@@ -82,3 +82,9 @@ export interface ReadingAnalysis {
   unclearWords: string[];
   feedback: string;
 }
+
+export interface ReadingRecord {
+  passage: string;
+  analysis: ReadingAnalysis;
+  timestamp: number;
+}

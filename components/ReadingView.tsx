@@ -71,13 +71,14 @@ const ReadingView: React.FC = () => {
             };
 
             mediaRecorder.onstop = () => {
-                const blob = new Blob(audioChunksRef.current, { type: options.mimeType });
                 // Luôn dừng các track để tắt icon ghi âm trên tab trình duyệt
                 stream.getTracks().forEach(track => track.stop());
 
-                // Xử lý trường hợp ghi âm quá ngắn hoặc không có dữ liệu
-                if (blob.size === 0) {
-                    console.warn("Bản ghi âm trống, có thể do ghi âm quá ngắn.");
+                const blob = new Blob(audioChunksRef.current, { type: options.mimeType });
+                
+                // Xử lý trường hợp ghi âm quá ngắn hoặc không có dữ liệu (dưới 100 bytes)
+                if (blob.size < 100) {
+                    console.warn(`Bản ghi âm quá nhỏ (${blob.size} bytes), có thể do ghi âm quá ngắn.`);
                     setError("Bản ghi âm quá ngắn. Bé hãy thử lại và đọc to, rõ ràng hơn nhé!");
                     setStatus('error');
                     return;
@@ -127,6 +128,7 @@ const ReadingView: React.FC = () => {
             const base64Audio = await blobToBase64(audioBlob);
             const result = await analyzeReading(question.passage, base64Audio, mimeType);
             setAnalysisResult(result);
+            user.addReadingRecord(question.passage, result);
 
             if (result.accuracy >= 95 && !user.earnedBadges.includes('reading_rockstar')) {
                 const badge = BADGES.find(b => b.id === 'reading_rockstar');

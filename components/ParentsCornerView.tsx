@@ -5,6 +5,7 @@ import { SUBJECTS, TOPICS, QUIZ_LENGTH } from '../constants';
 import Button from './Button';
 import Card from './Card';
 import { CheckCircleIcon, MedalIcon, ChartBarIcon } from './icons';
+import ReadingFeedback from './ReadingFeedback';
 
 const StatCard: React.FC<{ icon: React.ElementType, value: string | number, label: string, color: string }> = ({ icon: Icon, value, label, color }) => (
     <Card className="flex items-center space-x-4 bg-white">
@@ -34,7 +35,7 @@ const PerformanceIndicator: React.FC<{ accuracy: number }> = ({ accuracy }) => {
 
 const ParentsCornerView: React.FC = () => {
     const { handleBackToSubjects } = useGame();
-    const { stats, earnedBadges } = useUser();
+    const { stats, earnedBadges, readingHistory } = useUser();
 
     let totalQuizzes = 0;
     let totalCorrectAnswers = 0;
@@ -52,7 +53,7 @@ const ParentsCornerView: React.FC = () => {
 
     return (
         <div className="w-full max-w-4xl mx-auto p-4 md:p-6 animate-fade-in-up relative">
-            <div className="absolute top-0 left-0 md:top-4 md:left-4">
+            <div className="absolute top-0 left-0 md:top-4 md-left-4">
                 <button onClick={handleBackToSubjects} className="text-primary hover:underline">&larr; Quay lại</button>
             </div>
             <h1 className="text-4xl md:text-5xl font-bold text-primary-dark mb-2 text-center mt-8 md:mt-0">Góc Phụ Huynh</h1>
@@ -102,6 +103,36 @@ const ParentsCornerView: React.FC = () => {
                                         );
                                     })}
                                 </ul>
+                            )}
+                            {subject.id === 'tieng_viet' && readingHistory.length > 0 && (
+                                <div className="mt-6 pt-4 border-t-2 border-dashed">
+                                    <h4 className="text-xl font-bold text-secondary-dark mb-3 text-center">Lịch sử Luyện Đọc</h4>
+                                    <div className="space-y-4">
+                                        {readingHistory.slice(0, 5).map((record, index) => ( // Hiển thị 5 bài gần nhất
+                                            <Card key={index} className="bg-white p-0 overflow-hidden shadow-sm">
+                                                <details className="group">
+                                                    <summary className="p-4 cursor-pointer flex justify-between items-center group-hover:bg-blue-50/70 transition-colors">
+                                                        <div>
+                                                            <p className="font-semibold text-secondary-dark">
+                                                                "{record.passage.substring(0, 40)}..."
+                                                            </p>
+                                                            <p className="text-sm text-secondary">
+                                                                Ngày: {new Date(record.timestamp).toLocaleDateString('vi-VN')}
+                                                            </p>
+                                                        </div>
+                                                        <div className="flex items-center gap-4 flex-shrink-0">
+                                                            <PerformanceIndicator accuracy={record.analysis.accuracy} />
+                                                            <span className="text-xl text-secondary transform transition-transform duration-300 group-open:rotate-90">&#9654;</span>
+                                                        </div>
+                                                    </summary>
+                                                    <div className="p-4 border-t bg-gray-50">
+                                                        <ReadingFeedback passage={record.passage} analysis={record.analysis} />
+                                                    </div>
+                                                </details>
+                                            </Card>
+                                        ))}
+                                    </div>
+                                </div>
                             )}
                         </Card>
                     );

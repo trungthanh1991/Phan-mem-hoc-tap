@@ -1,13 +1,15 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
-import { QuizStats, TopicStats } from '../types';
+import { QuizStats, TopicStats, ReadingRecord, ReadingAnalysis } from '../types';
 
 const STORAGE_KEY = 'sanChoiTriTue_userData';
 
 interface UserContextType {
     earnedBadges: string[];
     stats: QuizStats;
+    readingHistory: ReadingRecord[];
     addBadge: (badgeId: string) => void;
     updateStats: (subjectId: string, topicId: string, score: number, totalQuestions: number) => void;
+    addReadingRecord: (passage: string, analysis: ReadingAnalysis) => void;
     getWeakestTopicId: (subjectId: string) => string | null;
 }
 
@@ -16,11 +18,13 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 interface StoredData {
     earnedBadges: string[];
     stats: QuizStats;
+    readingHistory: ReadingRecord[];
 }
 
 export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [earnedBadges, setEarnedBadges] = useState<string[]>([]);
     const [stats, setStats] = useState<QuizStats>({});
+    const [readingHistory, setReadingHistory] = useState<ReadingRecord[]>([]);
     const [isLoaded, setIsLoaded] = useState(false);
 
     useEffect(() => {
@@ -47,6 +51,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
                 setEarnedBadges(data.earnedBadges || []);
                 setStats(statsFromStorage);
+                setReadingHistory(data.readingHistory || []);
             }
         } catch (error) {
             console.error("Lỗi khi tải dữ liệu người dùng:", error);
@@ -58,12 +63,12 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     useEffect(() => {
         if (!isLoaded) return;
         try {
-            const data: StoredData = { earnedBadges, stats };
+            const data: StoredData = { earnedBadges, stats, readingHistory };
             localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
         } catch (error) {
             console.error("Lỗi khi lưu dữ liệu người dùng:", error);
         }
-    }, [earnedBadges, stats, isLoaded]);
+    }, [earnedBadges, stats, readingHistory, isLoaded]);
 
     const addBadge = (badgeId: string) => {
         if (!earnedBadges.includes(badgeId)) {
@@ -93,6 +98,15 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             return newStats;
         });
     };
+
+    const addReadingRecord = (passage: string, analysis: ReadingAnalysis) => {
+        const newRecord: ReadingRecord = {
+            passage,
+            analysis,
+            timestamp: Date.now(),
+        };
+        setReadingHistory(prev => [newRecord, ...prev]);
+    };
     
     const getWeakestTopicId = (subjectId: string): string | null => {
         const subjectStats = stats[subjectId];
@@ -120,7 +134,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
 
-    const value = { earnedBadges, stats, addBadge, updateStats, getWeakestTopicId };
+    const value = { earnedBadges, stats, addBadge, updateStats, getWeakestTopicId, readingHistory, addReadingRecord };
 
     return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
 };
