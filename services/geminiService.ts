@@ -4,10 +4,13 @@ import { Question, ReadingAnalysis, QuizStats } from '../types';
 
 // Lấy tất cả các khóa API từ biến môi trường và lọc ra những khóa hợp lệ.
 const API_KEYS = [
-  process.env.REACT_APP_API_KEY,
-  process.env.REACT_APP_API_KEY_2,
-  process.env.REACT_APP_API_KEY_3
+  import.meta.env.VITE_API_KEY,
+  import.meta.env.VITE_API_KEY_2,
+  import.meta.env.VITE_API_KEY_3
 ].filter((key) => typeof key === "string" && !!key.trim());
+
+console.log("✅ Gemini API keys loaded:", API_KEYS.length);
+
 
 if (API_KEYS.length === 0) {
     throw new Error("Chưa cấu hình khóa API cho Gemini. Vui lòng thêm ít nhất một khóa API (API_KEY, API_KEY_2, API_KEY_3) vào mục 'Secrets'.");
