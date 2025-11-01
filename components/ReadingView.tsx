@@ -1,11 +1,14 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useGame } from '../contexts/GameContext';
-import { ReadAloudQuestion, ReadingAnalysis } from '../types';
+import { useUser } from '../contexts/UserContext';
+import { ReadAloudQuestion, ReadingAnalysis, Badge } from '../types';
 import { analyzeReading } from '../services/geminiService';
+import { BADGES } from '../constants';
 import Card from './Card';
 import Button from './Button';
 import ReadingFeedback from './ReadingFeedback';
 import Spinner from './Spinner';
+import BadgeUnlockCard from './BadgeUnlockCard';
 import { MicrophoneIcon, StopCircleIcon, PlayCircleIcon, ArrowPathIcon } from './icons';
 
 type Status = 'idle' | 'requesting_permission' | 'ready_to_record' | 'recording' | 'recorded' | 'analyzing' | 'feedback' | 'error';
@@ -23,7 +26,8 @@ const blobToBase64 = (blob: Blob): Promise<string> => {
 };
 
 const ReadingView: React.FC = () => {
-    const { questions, selectedSubject, handleRestart, handleBackToSubjects } = useGame();
+    const { questions, handleRestart, handleBackToSubjects, handleBackToTopicSelection } = useGame();
+    const user = useUser();
     const question = questions[0] as ReadAloudQuestion;
 
     const [status, setStatus] = useState<Status>('idle');
@@ -31,6 +35,7 @@ const ReadingView: React.FC = () => {
     const [audioUrl, setAudioUrl] = useState<string | null>(null);
     const [analysisResult, setAnalysisResult] = useState<ReadingAnalysis | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [newlyEarnedBadge, setNewlyEarnedBadge] = useState<Badge | null>(null);
 
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const audioChunksRef = useRef<Blob[]>([]);
@@ -113,6 +118,15 @@ const ReadingView: React.FC = () => {
             const base64Audio = await blobToBase64(audioBlob);
             const result = await analyzeReading(question.passage, base64Audio, mimeType);
             setAnalysisResult(result);
+
+            if (result.accuracy >= 95 && !user.earnedBadges.includes('reading_rockstar')) {
+                const badge = BADGES.find(b => b.id === 'reading_rockstar');
+                if (badge) {
+                    user.addBadge('reading_rockstar');
+                    setNewlyEarnedBadge(badge);
+                }
+            }
+
             setStatus('feedback');
         } catch (err) {
             if (err instanceof Error) {
@@ -128,6 +142,7 @@ const ReadingView: React.FC = () => {
         cleanup();
         setAnalysisResult(null);
         setError(null);
+        setNewlyEarnedBadge(null);
         requestMicrophone();
     }
 
@@ -136,8 +151,12 @@ const ReadingView: React.FC = () => {
     }
 
     return (
-        <div className="w-full max-w-3xl mx-auto p-4 md:p-6 text-center">
-            <h1 className="text-3xl md:text-4xl font-bold text-primary-dark mb-2">Luyện Đọc Cùng AI</h1>
+        <div className="w-full max-w-3xl mx-auto p-4 md:p-6 text-center relative">
+            <div className="absolute top-0 left-0 md:top-4 md:left-4">
+                <button onClick={handleBackToTopicSelection} className="text-primary hover:underline">&larr; Quay lại</button>
+            </div>
+            
+            <h1 className="text-3xl md:text-4xl font-bold text-primary-dark mb-2 mt-8 md:mt-0">Luyện Đọc Cùng AI</h1>
             <p className="text-lg text-secondary mb-8">Bé hãy đọc to và rõ ràng đoạn văn dưới đây nhé!</p>
 
             <Card className="bg-white p-6 md:p-8 text-left mb-6">
@@ -161,16 +180,21 @@ const ReadingView: React.FC = () => {
                         <StopCircleIcon className="h-10 w-10"/>
                     </button>
                 )}
-                {status === 'recorded' && (
-                    <div className="flex items-center gap-4">
+                 {status === 'recorded' && (
+                    <div className="flex flex-col items-center gap-4 w-full max-w-md animate-fade-in-up">
+                        <p className="text-secondary-dark mb-2">Bé đã ghi âm xong! Bấm 'Gửi đi phân tích' để AI chấm điểm, hoặc nghe lại/ghi âm lại nhé.</p>
                         <audio ref={audioRef} src={audioUrl || ''} className="hidden"></audio>
-                        <button onClick={() => audioRef.current?.play()} className="p-3 bg-secondary-light rounded-full transform hover:scale-110 transition-transform" aria-label="Nghe lại">
-                           <PlayCircleIcon className="h-10 w-10 text-secondary-dark"/>
-                        </button>
-                        <Button onClick={handleAnalyze} variant="primary">Gửi đi phân tích</Button>
-                        <button onClick={handleTryAgain} className="p-3 bg-secondary-light rounded-full transform hover:scale-110 transition-transform" aria-label="Ghi âm lại">
-                           <ArrowPathIcon className="h-10 w-10 text-secondary-dark"/>
-                        </button>
+                        <Button onClick={handleAnalyze} variant="primary" className="w-full">Gửi đi phân tích</Button>
+                        <div className="flex items-center gap-4">
+                            <button onClick={() => audioRef.current?.play()} className="flex items-center gap-2 py-2 px-4 bg-secondary-light text-secondary-dark font-semibold rounded-full transform hover:scale-105 transition-transform" aria-label="Nghe lại">
+                               <PlayCircleIcon className="h-6 w-6"/>
+                               <span>Nghe lại</span>
+                            </button>
+                            <button onClick={handleTryAgain} className="flex items-center gap-2 py-2 px-4 bg-secondary-light text-secondary-dark font-semibold rounded-full transform hover:scale-105 transition-transform" aria-label="Ghi âm lại">
+                               <ArrowPathIcon className="h-6 w-6"/>
+                               <span>Ghi âm lại</span>
+                            </button>
+                        </div>
                     </div>
                 )}
                  {status === 'analyzing' && (
@@ -180,14 +204,19 @@ const ReadingView: React.FC = () => {
                     </div>
                 )}
                 {status === 'feedback' && (
-                     <div className="flex items-center gap-4">
-                        <Button onClick={handleTryAgain} variant="success">
-                            Thử lại với đoạn văn này
-                        </Button>
-                        <Button onClick={handleRestart} variant="primary">
-                            Luyện đọc đoạn văn khác
-                        </Button>
-                    </div>
+                    <div className="w-full max-w-md space-y-4">
+                        {newlyEarnedBadge && (
+                           <BadgeUnlockCard badge={newlyEarnedBadge} />
+                        )}
+                        <div className="flex flex-col sm:flex-row items-center gap-4">
+                            <Button onClick={handleTryAgain} variant="success" className="w-full sm:w-auto">
+                                Thử lại
+                            </Button>
+                            <Button onClick={handleRestart} variant="primary" className="w-full sm:w-auto">
+                                Đọc đoạn văn khác
+                            </Button>
+                        </div>
+                     </div>
                 )}
                 { (status === 'feedback' || status === 'error' && error !== 'Không thể truy cập micro. Bé hãy kiểm tra lại và cho phép ứng dụng dùng micro nhé.') &&
                      <Button onClick={handleBackToSubjects} variant="secondary">

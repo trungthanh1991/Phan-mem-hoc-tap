@@ -51,8 +51,11 @@ const ParentsCornerView: React.FC = () => {
     const overallAverage = totalQuestionsAsked > 0 ? (totalCorrectAnswers / totalQuestionsAsked) * 100 : 0;
 
     return (
-        <div className="w-full max-w-4xl mx-auto p-4 md:p-6 animate-fade-in-up">
-            <h1 className="text-4xl md:text-5xl font-bold text-primary-dark mb-2 text-center">Góc Phụ Huynh</h1>
+        <div className="w-full max-w-4xl mx-auto p-4 md:p-6 animate-fade-in-up relative">
+            <div className="absolute top-0 left-0 md:top-4 md:left-4">
+                <button onClick={handleBackToSubjects} className="text-primary hover:underline">&larr; Quay lại</button>
+            </div>
+            <h1 className="text-4xl md:text-5xl font-bold text-primary-dark mb-2 text-center mt-8 md:mt-0">Góc Phụ Huynh</h1>
             <p className="text-xl text-secondary mb-8 text-center">Báo cáo tiến độ học tập của bé.</p>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 my-8">
@@ -103,12 +106,6 @@ const ParentsCornerView: React.FC = () => {
                         </Card>
                     );
                 })}
-            </div>
-            
-            <div className="mt-12 text-center">
-                <Button onClick={handleBackToSubjects} variant="secondary">
-                    &larr; Quay lại
-                </Button>
             </div>
         </div>
     );

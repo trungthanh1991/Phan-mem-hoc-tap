@@ -65,6 +65,7 @@ export interface TopicStats {
   timesCompleted: number;
   totalCorrect: number;
   totalQuestions: number;
+  perfectScoreCount: number;
 }
 
 export interface QuizStats {

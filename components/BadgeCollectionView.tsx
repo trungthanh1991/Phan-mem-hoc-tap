@@ -9,8 +9,11 @@ const BadgeCollectionView: React.FC = () => {
     const { earnedBadges } = useUser();
 
     return (
-        <div className="w-full max-w-4xl mx-auto p-4 md:p-6 text-center">
-            <h1 className="text-4xl md:text-5xl font-bold text-primary-dark mb-2">Bộ Sưu Tập Huy Hiệu</h1>
+        <div className="w-full max-w-4xl mx-auto p-4 md:p-6 text-center relative">
+            <div className="absolute top-0 left-0 md:top-4 md:left-4">
+                <button onClick={handleBackToSubjects} className="text-primary hover:underline">&larr; Quay lại</button>
+            </div>
+            <h1 className="text-4xl md:text-5xl font-bold text-primary-dark mb-2 mt-8 md:mt-0">Bộ Sưu Tập Huy Hiệu</h1>
             <p className="text-xl text-secondary mb-10">Đây là những thành tích tuyệt vời của bé!</p>
 
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -44,12 +47,6 @@ const BadgeCollectionView: React.FC = () => {
                         </div>
                     );
                 })}
-            </div>
-            
-            <div className="mt-12">
-                <Button onClick={handleBackToSubjects} variant="secondary">
-                    &larr; Quay lại
-                </Button>
             </div>
         </div>
     );

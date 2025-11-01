@@ -1,6 +1,7 @@
 
+
 import { Subject, Topic, Badge } from './types';
-import { MathIcon, VietnameseIcon, ScienceIcon, TrophyIcon, CheckCircleIcon } from './components/icons';
+import { MathIcon, VietnameseIcon, ScienceIcon, TrophyIcon, CheckCircleIcon, MedalIcon, MicrophoneIcon, ClockIcon } from './components/icons';
 
 export const SUBJECTS: Subject[] = [
   {
@@ -74,7 +75,13 @@ export const BADGES: Badge[] = [
   {
     id: 'perfect_score',
     name: 'Chuyên Gia Hoàn Hảo',
-    description: 'Đạt điểm tuyệt đối trong một bài kiểm tra bất kỳ.',
+    description: 'Đạt điểm tuyệt đối trong một bài kiểm tra.',
+    icon: CheckCircleIcon,
+  },
+  {
+    id: 'perfectionist',
+    name: 'Người Cầu Toàn',
+    description: 'Đạt điểm tuyệt đối 3 lần.',
     icon: CheckCircleIcon,
   },
   {
@@ -94,5 +101,29 @@ export const BADGES: Badge[] = [
     name: 'Nhà Khoa Học Nhí',
     description: 'Đạt điểm tuyệt đối trong môn Tự nhiên & Xã hội.',
     icon: ScienceIcon,
+  },
+  {
+    id: 'marathon_runner',
+    name: 'Người Chạy Marathon',
+    description: 'Hoàn thành 10 bài kiểm tra.',
+    icon: MedalIcon,
+  },
+  {
+    id: 'subject_master',
+    name: 'Bậc Thầy Môn Học',
+    description: 'Hoàn thành tất cả chủ đề trong một môn học.',
+    icon: TrophyIcon,
+  },
+  {
+    id: 'reading_rockstar',
+    name: 'Ngôi Sao Đọc Sách',
+    description: 'Đạt 95% chính xác trong phần Luyện Đọc.',
+    icon: MicrophoneIcon,
+  },
+  {
+    id: 'brave_challenger',
+    name: 'Thử Thách Dũng Cảm',
+    description: 'Tham gia một bài thi thử Dài.',
+    icon: ClockIcon,
   },
 ];

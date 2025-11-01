@@ -48,6 +48,7 @@ export const SpeechProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     
     const audioContextRef = useRef<AudioContext | null>(null);
     const sourceNodeRef = useRef<AudioBufferSourceNode | null>(null);
+    const audioCacheRef = useRef(new Map<string, string>());
 
     const stop = useCallback(() => {
         if (sourceNodeRef.current) {
@@ -68,6 +69,18 @@ export const SpeechProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         setSpeakingText(text);
 
         try {
+            const getAudio = async (): Promise<string> => {
+                 if (audioCacheRef.current.has(text)) {
+                    return audioCacheRef.current.get(text)!;
+                } else {
+                    const base64Audio = await generateSpeech(text);
+                    audioCacheRef.current.set(text, base64Audio);
+                    return base64Audio;
+                }
+            }
+            
+            const base64Audio = await getAudio();
+
             if (!audioContextRef.current) {
                 audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
             }
@@ -76,7 +89,6 @@ export const SpeechProvider: React.FC<{ children: ReactNode }> = ({ children }) 
                 await audioContext.resume();
             }
 
-            const base64Audio = await generateSpeech(text);
             const audioBytes = decode(base64Audio);
             const audioBuffer = await decodeAudioData(audioBytes, audioContext, 24000, 1);
             

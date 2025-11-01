@@ -39,6 +39,9 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                         if (topic.totalQuestions === undefined) {
                             topic.totalQuestions = 0;
                         }
+                        if (topic.perfectScoreCount === undefined) {
+                            topic.perfectScoreCount = 0;
+                        }
                     });
                 });
 
@@ -75,7 +78,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 newStats[subjectId] = {};
             }
             if (!newStats[subjectId][topicId]) {
-                newStats[subjectId][topicId] = { bestScore: 0, timesCompleted: 0, totalCorrect: 0, totalQuestions: 0 };
+                newStats[subjectId][topicId] = { bestScore: 0, timesCompleted: 0, totalCorrect: 0, totalQuestions: 0, perfectScoreCount: 0 };
             }
 
             const topicStats: TopicStats = newStats[subjectId][topicId];
@@ -83,6 +86,9 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             topicStats.timesCompleted += 1;
             topicStats.totalCorrect += score;
             topicStats.totalQuestions += totalQuestions;
+            if (score === totalQuestions) {
+                topicStats.perfectScoreCount += 1;
+            }
 
             return newStats;
         });
@@ -95,7 +101,8 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         let weakestTopicId: string | null = null;
         let lowestPerformance = Infinity;
 
-        const playedTopics = Object.entries(subjectStats)
+// FIX: Cast Object.entries result to explicitly type `topicStats` and resolve property access errors.
+        const playedTopics = (Object.entries(subjectStats) as [string, TopicStats][])
             .filter(([, topicStats]) => topicStats.timesCompleted > 0 && topicStats.totalQuestions > 0);
 
         if (playedTopics.length < 2) return null;

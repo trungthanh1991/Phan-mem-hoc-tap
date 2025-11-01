@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import { useGame } from '../contexts/GameContext';
 import { QUIZ_LENGTH } from '../constants';
@@ -9,7 +10,7 @@ import BadgeUnlockCard from './BadgeUnlockCard';
 import SpeechButton from './SpeechButton';
 
 const ResultsView: React.FC = () => {
-  const { score, handleRestart, handleBackToSubjects, selectedSubject, newlyEarnedBadges } = useGame();
+  const { score, handleRestart, handleBackToSubjects, selectedSubject, newlyEarnedBadges, handleBackToTopicSelection, selectedTopic } = useGame();
   const totalQuestions = QUIZ_LENGTH;
 
   const percentage = (score / totalQuestions) * 100;
@@ -36,6 +37,14 @@ const ResultsView: React.FC = () => {
     ? `${selectedSubject.lightBgColor} text-secondary-dark border-4 ${selectedSubject.borderColor}`
     : 'bg-primary-light/20 text-primary-dark border-4 border-primary-light';
   
+  const handleBack = () => {
+      if (selectedTopic) {
+          handleBackToTopicSelection();
+      } else {
+          handleBackToSubjects();
+      }
+  }
+
   const renderContent = () => (
     <>
       <div className="text-6xl mb-4 animate-bounce">{emoji}</div>
@@ -59,8 +68,11 @@ const ResultsView: React.FC = () => {
   );
 
   return (
-    <div className="flex flex-col items-center justify-center p-6 space-y-6 w-full max-w-md mx-auto">
-      <Card className={`${selectedSubject?.lightBgColor || 'bg-white'} w-full text-center transform hover:scale-105 overflow-hidden`}>
+    <div className="flex flex-col items-center justify-center p-6 space-y-6 w-full max-w-md mx-auto relative">
+       <div className="absolute top-0 left-0">
+          <button onClick={handleBack} className="text-primary hover:underline">&larr; Quay lại</button>
+       </div>
+      <Card className={`${selectedSubject?.lightBgColor || 'bg-white'} w-full text-center transform hover:scale-105 overflow-hidden mt-8`}>
         {showSparkles ? <Sparkles>{renderContent()}</Sparkles> : renderContent()}
       </Card>
 

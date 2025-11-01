@@ -1,8 +1,13 @@
-import { GoogleGenAI, Type, Modality } from "@google/genai";
+
+
+
+// FIX: Import GenerateContentResponse to correctly type API responses.
+import { GoogleGenAI, Type, Modality, GenerateContentResponse } from "@google/genai";
 import { QUIZ_LENGTH } from '../constants';
 import { Question, ReadingAnalysis, QuizStats } from '../types';
 
 // Lấy tất cả các khóa API từ biến môi trường và lọc ra những khóa hợp lệ.
+// Trong môi trường này, các biến "Secrets" được truy cập thông qua process.env
 const API_KEYS = [
   import.meta.env.VITE_API_KEY,
   import.meta.env.VITE_API_KEY_2,
@@ -155,12 +160,14 @@ export const generateQuiz = async (subjectName: string, topicName: string): Prom
             };
         }
 
-        const response = await callGeminiWithRetry((ai) => ai.models.generateContent({
+// FIX: Explicitly type the API response to resolve 'Property 'text' does not exist on type 'unknown''.
+        const response = await callGeminiWithRetry<GenerateContentResponse>((ai) => ai.models.generateContent({
             model: "gemini-2.5-flash",
             contents: prompt,
             config: {
                 responseMimeType: "application/json",
                 responseSchema: responseSchema,
+                thinkingConfig: { thinkingBudget: 0 },
             },
         }));
 
@@ -235,12 +242,14 @@ export const generateExam = async (subjectName: string, durationPreference: 'sho
             required: ["timeLimitInSeconds", "questions"]
         };
 
-        const response = await callGeminiWithRetry((ai) => ai.models.generateContent({
+// FIX: Explicitly type the API response to resolve 'Property 'text' does not exist on type 'unknown''.
+        const response = await callGeminiWithRetry<GenerateContentResponse>((ai) => ai.models.generateContent({
             model: "gemini-2.5-flash",
             contents: prompt,
             config: {
                 responseMimeType: "application/json",
                 responseSchema: responseSchema,
+                thinkingConfig: { thinkingBudget: 0 },
             },
         }));
 
@@ -306,7 +315,8 @@ export const analyzeReading = async (passage: string, audioBase64: string, mimeT
             required: ["accuracy", "incorrectWords", "unclearWords", "feedback"]
         };
 
-        const response = await callGeminiWithRetry((ai) => ai.models.generateContent({
+// FIX: Explicitly type the API response to resolve 'Property 'text' does not exist on type 'unknown''.
+        const response = await callGeminiWithRetry<GenerateContentResponse>((ai) => ai.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: { parts: [{ text: prompt }, audioPart] },
             config: {
@@ -326,7 +336,8 @@ export const analyzeReading = async (passage: string, audioBase64: string, mimeT
 
 export const generateSpeech = async (text: string): Promise<string> => {
     try {
-        const response = await callGeminiWithRetry((ai) => ai.models.generateContent({
+// FIX: Explicitly type the API response to resolve 'Property 'candidates' does not exist on type 'unknown''.
+        const response = await callGeminiWithRetry<GenerateContentResponse>((ai) => ai.models.generateContent({
             model: "gemini-2.5-flash-preview-tts",
             contents: [{ parts: [{ text }] }],
             config: {

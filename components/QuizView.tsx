@@ -10,7 +10,7 @@ import SpeechButton from './SpeechButton';
 import Timer from './Timer';
 
 const QuizView: React.FC = () => {
-  const { questions, handleQuizComplete, selectedSubject, passage, selectedTopic, gameState, timeLimit } = useGame();
+  const { questions, handleQuizComplete, selectedSubject, passage, selectedTopic, gameState, timeLimit, handleBackToTopicSelection, handleBackToExamOptions } = useGame();
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [userAnswer, setUserAnswer] = useState<string | string[] | null>(null);
@@ -109,13 +109,22 @@ const QuizView: React.FC = () => {
 
 
   return (
-    <div className="w-full max-w-3xl mx-auto p-4 md:p-6">
+    <div className="w-full max-w-3xl mx-auto p-4 md:p-6 relative">
+       <div className="absolute top-0 left-0 md:top-4 md:left-4">
+            <button 
+                onClick={gameState === 'in_exam' ? handleBackToExamOptions : handleBackToTopicSelection} 
+                className="text-primary hover:underline"
+            >
+                &larr; Quay lại
+            </button>
+        </div>
+       
        {gameState === 'in_exam' && timeLimit > 0 && (
           <Timer initialSeconds={timeLimit} onTimeUp={handleTimeUp} />
        )}
 
        {passage && selectedTopic?.id === 'doc_hieu_doan_van' && (
-          <Card className="mb-6 bg-white/80 backdrop-blur-sm">
+          <Card className="mb-6 bg-white/80 backdrop-blur-sm mt-8">
             <div className="flex items-start gap-2">
               <div className="flex-grow">
                 <h3 className="text-xl font-bold text-primary-dark mb-2">Đoạn văn</h3>
@@ -126,7 +135,7 @@ const QuizView: React.FC = () => {
           </Card>
         )}
 
-      <div className="mb-6">
+      <div className="mb-6 mt-8">
         <div className="flex justify-between items-center mb-2 text-secondary">
           <span>Câu hỏi {currentQuestionIndex + 1} / {totalQuestions}</span>
           <span>Điểm: {score}</span>
