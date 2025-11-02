@@ -43,7 +43,7 @@ export const SUBJECTS: Subject[] = [
 export const TOPICS: Record<string, Topic[]> = {
   toan_hoc: [
     { id: 'phep_cong_tru_1000', name: 'Cộng trừ trong phạm vi 1000' },
-    { id: 'phep_nhan_chia_bang_2_5', name: 'Nhân chia trong bảng 2-5' },
+    { id: 'phep_nhan_chia_bang_2_5', name: 'Nhân chia trong bảng 2-9' },
     { id: 'hinh_hoc_co_ban', name: 'Hình học cơ bản' },
     { id: 'xem_dong_ho', name: 'Xem đồng hồ' },
     { id: 'giai_toan_loi_van', name: 'Giải toán có lời văn' },
@@ -51,8 +51,8 @@ export const TOPICS: Record<string, Topic[]> = {
     { id: 'so_sanh', name: 'So sánh (lớn hơn, nhỏ hơn, bằng)' },
   ],
   tieng_viet: [
-    { id: 'tu_chi_su_vat', name: 'Từ chỉ sự vật' },
-    { id: 'cau_ai_la_gi', name: 'Câu "Ai là gì?"' },
+    { id: 'tu_chi_su_vat', name: 'Tìm từ ( ví dụ như tìm động từ, tính từ...)' },
+    { id: 'cau_ai_la_gi', name: 'Điền từ vào chỗ trống' },
     { id: 'doc_hieu_doan_van', name: 'Đọc hiểu đoạn văn ngắn' },
     { id: 'doc_doan_van', name: 'Luyện Đọc Cùng AI' },
   ],
@@ -63,7 +63,7 @@ export const TOPICS: Record<string, Topic[]> = {
   ],
 };
 
-export const QUIZ_LENGTH = 5;
+export const QUIZ_LENGTH = 10;
 
 export const BADGES: Badge[] = [
   {

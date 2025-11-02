@@ -1,15 +1,16 @@
 
 
 
+
 // FIX: Import GenerateContentResponse to correctly type API responses.
 import { GoogleGenAI, Type, Modality, GenerateContentResponse } from "@google/genai";
 import { QUIZ_LENGTH } from '../constants';
 import { Question, ReadingAnalysis, QuizStats } from '../types';
 
 // Lấy tất cả các khóa API từ biến môi trường và lọc ra những khóa hợp lệ.
-// Trong môi trường này, các biến "Secrets" được truy cập thông qua process.env
+// Trong môi trường này, các biến "Secrets" được truy cập qua process.env
 const API_KEYS = [
-  import.meta.env.VITE_API_KEY,
+ import.meta.env.VITE_API_KEY,
   import.meta.env.VITE_API_KEY_2,
   import.meta.env.VITE_API_KEY_3
 ].filter((key) => typeof key === "string" && !!key.trim());
@@ -127,9 +128,9 @@ export const generateQuiz = async (subjectName: string, topicName: string): Prom
                 Hãy tạo ra một bài kiểm tra gồm ${QUIZ_LENGTH} câu hỏi về chủ đề "${topicName}" thuộc môn học "${subjectName}".
 
                 Bài kiểm tra phải bao gồm sự đa dạng các loại câu hỏi:
-                - 2 câu hỏi trắc nghiệm (MULTIPLE_CHOICE).
-                - 2 câu hỏi điền vào chỗ trống (FILL_IN_THE_BLANK).
-                - 1 câu hỏi sắp xếp từ (REARRANGE_WORDS).
+                - 4 câu hỏi trắc nghiệm (MULTIPLE_CHOICE).
+                - 4 câu hỏi điền vào chỗ trống (FILL_IN_THE_BLANK).
+                - 2 câu hỏi sắp xếp từ (REARRANGE_WORDS).
 
                 Yêu cầu cho từng loại câu hỏi:
                 1.  **MULTIPLE_CHOICE**: 'question', 'options' (mảng 4 chuỗi), 'correctAnswer'.
@@ -194,27 +195,27 @@ export const generateQuiz = async (subjectName: string, topicName: string): Prom
 
 export const generateExam = async (subjectName: string, durationPreference: 'short' | 'medium' | 'long', userStats: QuizStats): Promise<{ timeLimitInSeconds: number; questions: Question[] }> => {
     try {
-        const durationMapping = {
-            short: 'ngắn',
-            medium: 'trung bình',
-            long: 'dài'
+        const questionCountMapping = {
+            short: 10,
+            medium: 20,
+            long: 40,
         };
+        const numberOfQuestions = questionCountMapping[durationPreference];
         
         const prompt = `
             Bạn là một AI gia sư thông minh, đang tạo một bài thi thử cho học sinh lớp 3 (8 tuổi).
             Môn học: "${subjectName}".
-            Thời lượng mong muốn của học sinh: "${durationMapping[durationPreference]}".
-            
-            Đây là lịch sử học tập của học sinh: ${JSON.stringify(userStats)}. Hãy phân tích dữ liệu này để cá nhân hóa bài thi. Những chủ đề có tỷ lệ chính xác thấp hơn nên được ưu tiên.
 
-            Dựa trên mong muốn về thời lượng và lịch sử học tập, hãy quyết định:
-            1.  Số lượng câu hỏi phù hợp.
-            2.  Thời gian làm bài hợp lý (tính bằng giây).
+            Yêu cầu chính:
+            1. Tạo một bài thi gồm CHÍNH XÁC ${numberOfQuestions} câu hỏi.
+            2. Nội dung thi phải bao quát TOÀN BỘ các chủ đề ôn tập của môn học.
+            3. Quyết định một thời gian làm bài hợp lý (tính bằng giây) cho bài thi ${numberOfQuestions} câu hỏi này.
 
-            Yêu cầu:
-            - Tạo ra một bộ câu hỏi đa dạng (trắc nghiệm, điền vào chỗ trống, sắp xếp từ) từ nhiều chủ đề khác nhau trong môn học.
+            Hướng dẫn thêm:
+            - Đây là lịch sử học tập của học sinh: ${JSON.stringify(userStats)}. Hãy phân tích dữ liệu này để cá nhân hóa bài thi. Những chủ đề có tỷ lệ chính xác thấp hơn nên được ưu tiên trong các câu hỏi.
+            - Tạo ra một bộ câu hỏi đa dạng (trắc nghiệm, điền vào chỗ trống, sắp xếp từ).
             - Toàn bộ nội dung BẮT BUỘC phải là Tiếng Việt.
-            - Trả về kết quả dưới dạng một đối tượng JSON duy nhất có hai khóa: "timeLimitInSeconds" (một số nguyên) và "questions" (một mảng các đối tượng câu hỏi).
+            - Trả về kết quả dưới dạng một đối tượng JSON duy nhất có hai khóa: "timeLimitInSeconds" (một số nguyên) và "questions" (một mảng CHÍNH XÁC ${numberOfQuestions} đối tượng câu hỏi).
             - Mỗi đối tượng câu hỏi phải có 'type', 'correctAnswer', 'explanation' và các trường cần thiết khác.
         `;
 

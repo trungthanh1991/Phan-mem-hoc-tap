@@ -11,7 +11,7 @@ import Spinner from './Spinner';
 import BadgeUnlockCard from './BadgeUnlockCard';
 import { MicrophoneIcon, StopCircleIcon, PlayCircleIcon, ArrowPathIcon } from './icons';
 
-type Status = 'idle' | 'requesting_permission' | 'ready_to_record' | 'recording' | 'recorded' | 'analyzing' | 'feedback' | 'error';
+type Status = 'idle' | 'requesting_permission' | 'recording' | 'recorded' | 'analyzing' | 'feedback' | 'error';
 
 const blobToBase64 = (blob: Blob): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -38,9 +38,8 @@ const ReadingView: React.FC = () => {
     const [newlyEarnedBadge, setNewlyEarnedBadge] = useState<Badge | null>(null);
 
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-    const audioChunksRef = useRef<Blob[]>([]);
     const audioRef = useRef<HTMLAudioElement>(null);
-
+    
     const cleanup = useCallback(() => {
         if (audioUrl) {
             URL.revokeObjectURL(audioUrl);
@@ -49,34 +48,36 @@ const ReadingView: React.FC = () => {
             mediaRecorderRef.current.stop();
         }
         mediaRecorderRef.current = null;
-        audioChunksRef.current = [];
         setAudioBlob(null);
         setAudioUrl(null);
     }, [audioUrl]);
 
-    const requestMicrophone = useCallback(async () => {
+    // Effect để cleanup khi component unmount
+    useEffect(() => {
+        return cleanup;
+    }, [cleanup]);
+
+    const handleStartRecording = async () => {
+        cleanup(); // Dọn dẹp các bản ghi cũ trước khi bắt đầu
         setStatus('requesting_permission');
+        setError(null);
+        
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             const options = { mimeType: 'audio/webm;codecs=opus' };
             const mediaRecorder = new MediaRecorder(stream, options);
+            mediaRecorderRef.current = mediaRecorder;
+            const audioChunks: Blob[] = [];
 
-            mediaRecorder.onstart = () => {
-                audioChunksRef.current = [];
-                setStatus('recording');
-            };
-            
             mediaRecorder.ondataavailable = (event) => {
-                audioChunksRef.current.push(event.data);
+                audioChunks.push(event.data);
             };
 
             mediaRecorder.onstop = () => {
-                // Luôn dừng các track để tắt icon ghi âm trên tab trình duyệt
                 stream.getTracks().forEach(track => track.stop());
 
-                const blob = new Blob(audioChunksRef.current, { type: options.mimeType });
+                const blob = new Blob(audioChunks, { type: options.mimeType });
                 
-                // Xử lý trường hợp ghi âm quá ngắn hoặc không có dữ liệu (dưới 100 bytes)
                 if (blob.size < 100) {
                     console.warn(`Bản ghi âm quá nhỏ (${blob.size} bytes), có thể do ghi âm quá ngắn.`);
                     setError("Bản ghi âm quá ngắn. Bé hãy thử lại và đọc to, rõ ràng hơn nhé!");
@@ -89,31 +90,18 @@ const ReadingView: React.FC = () => {
                 setAudioUrl(url);
                 setStatus('recorded');
             };
+            
+            mediaRecorder.start();
+            setStatus('recording');
 
-            mediaRecorderRef.current = mediaRecorder;
-            setStatus('ready_to_record');
         } catch (err) {
             console.error("Lỗi truy cập micro:", err);
             setError("Không thể truy cập micro. Bé hãy kiểm tra lại và cho phép ứng dụng dùng micro nhé.");
             setStatus('error');
         }
-    }, []);
-    
-    useEffect(() => {
-        requestMicrophone();
-        return cleanup;
-    }, [requestMicrophone, cleanup]);
-
-    const startRecording = () => {
-        if (mediaRecorderRef.current) {
-            mediaRecorderRef.current.start();
-        } else {
-             // Nếu người dùng từ chối và muốn thử lại
-            requestMicrophone();
-        }
     };
 
-    const stopRecording = () => {
+    const handleStopRecording = () => {
         if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
             mediaRecorderRef.current.stop();
         }
@@ -154,7 +142,7 @@ const ReadingView: React.FC = () => {
         setAnalysisResult(null);
         setError(null);
         setNewlyEarnedBadge(null);
-        requestMicrophone();
+        setStatus('idle');
     }
 
     if (!question || question.type !== 'READ_ALOUD') {
@@ -179,13 +167,13 @@ const ReadingView: React.FC = () => {
             </Card>
 
             <div className="flex flex-col items-center gap-4">
-                {status === 'ready_to_record' && (
-                    <button onClick={startRecording} className="flex items-center justify-center gap-3 text-2xl font-bold bg-danger text-white rounded-full h-24 w-24 shadow-lg transform hover:scale-110 transition-transform">
+                 {status === 'idle' && (
+                    <button onClick={handleStartRecording} className="flex items-center justify-center gap-3 text-2xl font-bold bg-danger text-white rounded-full h-24 w-24 shadow-lg transform hover:scale-110 transition-transform">
                         <MicrophoneIcon className="h-10 w-10"/>
                     </button>
                 )}
                 {status === 'recording' && (
-                     <button onClick={stopRecording} className="flex items-center justify-center gap-3 text-2xl font-bold bg-danger text-white rounded-full h-24 w-24 shadow-lg animate-pulse">
+                     <button onClick={handleStopRecording} className="flex items-center justify-center gap-3 text-2xl font-bold bg-danger text-white rounded-full h-24 w-24 shadow-lg animate-pulse">
                         <StopCircleIcon className="h-10 w-10"/>
                     </button>
                 )}
@@ -206,10 +194,12 @@ const ReadingView: React.FC = () => {
                         </div>
                     </div>
                 )}
-                 {status === 'analyzing' && (
+                 {(status === 'analyzing' || status === 'requesting_permission') && (
                     <div className="flex flex-col items-center gap-4">
                         <Spinner />
-                        <p className="text-secondary-dark font-semibold">AI đang lắng nghe và phân tích, bé chờ chút nhé...</p>
+                        <p className="text-secondary-dark font-semibold">
+                           {status === 'analyzing' ? 'AI đang lắng nghe và phân tích...' : 'Bé hãy cho phép dùng micro nhé...'}
+                        </p>
                     </div>
                 )}
                 {status === 'feedback' && (
