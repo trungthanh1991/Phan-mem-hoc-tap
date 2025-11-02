@@ -6,9 +6,9 @@ import { Question, ReadingAnalysis, QuizStats } from '../types';
 // Lấy tất cả các khóa API từ biến môi trường và lọc ra những khóa hợp lệ.
 // Trong môi trường này, các biến "Secrets" được truy cập qua process.env
 const API_KEYS = [
-  process.env.API_KEY,
-  process.env.API_KEY_2,
-  process.env.API_KEY_3
+ import.meta.env.VITE_API_KEY,
+  import.meta.env.VITE_API_KEY_2,
+  import.meta.env.VITE_API_KEY_
 
 ].filter((key) => typeof key === "string" && !!key.trim());
 
