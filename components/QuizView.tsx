@@ -6,7 +6,6 @@ import Button from './Button';
 import MultipleChoice from './questions/MultipleChoice';
 import FillInTheBlank from './questions/FillInTheBlank';
 import RearrangeWords from './questions/RearrangeWords';
-import SpeechButton from './SpeechButton';
 import Timer from './Timer';
 
 const QuizView: React.FC = () => {
@@ -146,7 +145,6 @@ const QuizView: React.FC = () => {
                 <h3 className="text-xl font-bold text-primary-dark mb-2">Đoạn văn</h3>
                 <p className="text-lg text-secondary-dark leading-relaxed">{passage}</p>
               </div>
-              <SpeechButton textToSpeak={passage} />
             </div>
           </Card>
         )}
@@ -172,7 +170,6 @@ const QuizView: React.FC = () => {
             <h3 className="font-bold text-lg">{isCorrect ? "Chính xác! Hoan hô bé!" : "Tiếc quá, sai rồi!"}</h3>
             <div className="flex items-start">
               <p className="mt-1 flex-grow">{currentQuestion.explanation}</p>
-              <SpeechButton textToSpeak={currentQuestion.explanation} className="ml-2 flex-shrink-0" />
             </div>
           </div>
         </Card>

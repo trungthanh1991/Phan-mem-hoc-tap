@@ -1,6 +1,5 @@
 import React from 'react';
 import { MultipleChoiceQuestion } from '../../types';
-import SpeechButton from '../SpeechButton';
 
 interface Props {
   question: MultipleChoiceQuestion;
@@ -28,7 +27,6 @@ const MultipleChoice: React.FC<Props> = ({ question, userAnswer, setUserAnswer, 
     <div>
       <div className="flex items-start gap-2 mb-6">
         <h2 className="text-2xl md:text-3xl font-bold text-secondary-dark flex-grow">{question.question}</h2>
-        <SpeechButton textToSpeak={question.question} />
       </div>
       <div className="space-y-4">
         {question.options.map((option, index) => (

@@ -7,7 +7,6 @@ import Card from './Card';
 import Button from './Button';
 import Sparkles from './Sparkles';
 import BadgeUnlockCard from './BadgeUnlockCard';
-import SpeechButton from './SpeechButton';
 
 const ResultsView: React.FC = () => {
   const { score, questions, handleRestart, handleBackToSubjects, selectedSubject, newlyEarnedBadges, handleBackToTopicSelection, selectedTopic } = useGame();
@@ -51,7 +50,6 @@ const ResultsView: React.FC = () => {
       <h2 className="text-3xl font-bold text-secondary-dark mb-2">Kết quả của bé</h2>
       <div className="flex justify-center items-center gap-2 mb-4">
         <p className="text-xl text-secondary">{message}</p>
-        <SpeechButton textToSpeak={message} />
       </div>
       <div className={`text-4xl font-bold rounded-full w-40 h-40 flex items-center justify-center mx-auto my-6 transition-colors duration-300 ${scoreCircleClasses}`}>
         {score} / {totalQuestions}

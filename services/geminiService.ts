@@ -1,14 +1,14 @@
 // FIX: Import GenerateContentResponse to correctly type API responses.
-import { GoogleGenAI, Type, Modality, GenerateContentResponse } from "@google/genai";
+import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
 import { QUIZ_LENGTH } from '../constants';
 import { Question, ReadingAnalysis, QuizStats } from '../types';
 
 // Lấy tất cả các khóa API từ biến môi trường và lọc ra những khóa hợp lệ.
 // Trong môi trường này, các biến "Secrets" được truy cập qua process.env
 const API_KEYS = [
- import.meta.env.VITE_API_KEY,
-  import.meta.env.VITE_API_KEY_2,
-  import.meta.env.VITE_API_KEY_3
+  process.env.API_KEY,
+  process.env.API_KEY_2,
+  process.env.API_KEY_3
 
 ].filter((key) => typeof key === "string" && !!key.trim());
 
@@ -329,33 +329,5 @@ export const analyzeReading = async (passage: string, audioBase64: string, mimeT
     } catch (error) {
         console.error("Lỗi khi phân tích giọng đọc từ Gemini:", error);
         throw new Error("AI không thể phân tích bài đọc vào lúc này. Vui lòng thử lại sau.");
-    }
-};
-
-export const generateSpeech = async (text: string): Promise<string> => {
-    try {
-// FIX: Explicitly type the API response to resolve 'Property 'candidates' does not exist on type 'unknown''.
-        const response = await callGeminiWithRetry<GenerateContentResponse>((ai) => ai.models.generateContent({
-            model: "gemini-2.5-flash-preview-tts",
-            contents: [{ parts: [{ text }] }],
-            config: {
-                responseModalities: [Modality.AUDIO],
-                speechConfig: {
-                    voiceConfig: {
-                        prebuiltVoiceConfig: { voiceName: 'Kore' },
-                    },
-                },
-            },
-        }));
-
-        const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-        if (!base64Audio) {
-            throw new Error("Không nhận được dữ liệu âm thanh từ API.");
-        }
-        return base64Audio;
-
-    } catch (error) {
-        console.error("Lỗi khi tạo giọng nói từ Gemini:", error);
-        throw new Error("AI không thể đọc văn bản vào lúc này. Vui lòng thử lại sau.");
     }
 };

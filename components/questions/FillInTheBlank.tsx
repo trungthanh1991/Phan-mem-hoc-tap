@@ -1,6 +1,5 @@
 import React from 'react';
 import { FillInTheBlankQuestion } from '../../types';
-import SpeechButton from '../SpeechButton';
 
 interface Props {
   question: FillInTheBlankQuestion;
@@ -11,7 +10,6 @@ interface Props {
 
 const FillInTheBlank: React.FC<Props> = ({ question, userAnswer, setUserAnswer, isAnswered }) => {
   const [part1, part2] = question.questionParts;
-  const fullTextToSpeak = `${part1} ... ${part2}`;
 
   return (
     <div className="flex flex-col items-center justify-center">
@@ -28,7 +26,6 @@ const FillInTheBlank: React.FC<Props> = ({ question, userAnswer, setUserAnswer, 
                 />
                 <span>{part2}</span>
             </div>
-            <SpeechButton textToSpeak={fullTextToSpeak} />
         </div>
     </div>
   );
