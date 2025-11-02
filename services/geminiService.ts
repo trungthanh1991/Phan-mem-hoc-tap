@@ -9,6 +9,7 @@ const API_KEYS = [
  import.meta.env.VITE_API_KEY,
   import.meta.env.VITE_API_KEY_2,
   import.meta.env.VITE_API_KEY_3
+
 ].filter((key) => typeof key === "string" && !!key.trim());
 
 console.log("✅ Gemini API keys loaded:", API_KEYS.length);
@@ -63,7 +64,7 @@ export const generateQuiz = async (subjectName: string, topicName: string): Prom
         let responseSchema: any;
         let isReadingComprehension = topicName === 'Đọc hiểu đoạn văn ngắn';
 
-        if (topicName === 'Luyện Đọc Cùng AI') {
+        if (topicName === 'Luyện đọc') {
             prompt = `
                 Bạn là một giáo viên tiểu học vui tính. Hãy tạo ra MỘT câu hỏi dạng ĐỌC THÀNH TIẾNG cho học sinh lớp 3 (8 tuổi).
                 - Tạo một đoạn văn Tiếng Việt ngắn (khoảng 30-50 từ), nội dung trong sáng, vui vẻ, phù hợp với trẻ em.
@@ -93,7 +94,7 @@ export const generateQuiz = async (subjectName: string, topicName: string): Prom
                 2.  ${QUIZ_LENGTH} câu hỏi trắc nghiệm (MULTIPLE_CHOICE) dựa trên nội dung của đoạn văn đó.
                 
                 Yêu cầu:
-                - Mỗi câu hỏi phải có 'question', 'options' (mảng 4 chuỗi), 'correctAnswer', và 'explanation' (giải thích ngắn gọn).
+                - Mỗi câu hỏi phải có 'question', 'options' (mảng 4 chuỗi), 'correctAnswer', và 'explanation' (giải thích ngắn gọn, chỉ ra tại sao đáp án đó đúng dựa vào đoạn văn).
                 - Toàn bộ nội dung BẮT BUỘC phải là Tiếng Việt.
                 - Trả về kết quả dưới dạng một đối tượng JSON duy nhất có hai khóa: "passage" (chứa đoạn văn) và "questions" (chứa mảng ${QUIZ_LENGTH} câu hỏi).
             `;
@@ -135,7 +136,7 @@ export const generateQuiz = async (subjectName: string, topicName: string): Prom
 
                 Yêu cầu chung:
                 - Ngôn ngữ đơn giản, phù hợp với trẻ 8 tuổi.
-                - Cung cấp một lời giải thích ('explanation') ngắn gọn, dễ hiểu cho TẤT CẢ các câu hỏi.
+                - Cung cấp một lời giải thích ('explanation') ngắn gọn, dễ hiểu cho TẤT CẢ các câu hỏi. Lời giải thích phải chỉ ra cách đi đến đáp án đúng một cách logic, không chỉ lặp lại đáp án. Ví dụ, cho câu hỏi "600 - __ = 250", lời giải thích nên là "Để tìm số trừ, ta lấy số bị trừ (600) trừ đi hiệu (250), kết quả là 350."
                 - Toàn bộ nội dung BẮT BUỘC phải là Tiếng Việt.
                 - Trả về kết quả dưới dạng một mảng JSON. Mỗi đối tượng phải có 'type' là một trong ba giá trị: 'MULTIPLE_CHOICE', 'FILL_IN_THE_BLANK', hoặc 'REARRANGE_WORDS'.
             `;
@@ -212,7 +213,7 @@ export const generateExam = async (subjectName: string, durationPreference: 'sho
             - Tạo ra một bộ câu hỏi đa dạng (trắc nghiệm, điền vào chỗ trống, sắp xếp từ).
             - Toàn bộ nội dung BẮT BUỘC phải là Tiếng Việt.
             - Trả về kết quả dưới dạng một đối tượng JSON duy nhất có hai khóa: "timeLimitInSeconds" (một số nguyên) và "questions" (một mảng CHÍNH XÁC ${numberOfQuestions} đối tượng câu hỏi).
-            - Mỗi đối tượng câu hỏi phải có 'type', 'correctAnswer', 'explanation' và các trường cần thiết khác.
+            - Mỗi đối tượng câu hỏi phải có 'type', 'correctAnswer', 'explanation' và các trường cần thiết khác. Lời giải thích phải chỉ ra cách đi đến đáp án đúng một cách logic, không chỉ lặp lại đáp án.
         `;
 
         const responseSchema = {

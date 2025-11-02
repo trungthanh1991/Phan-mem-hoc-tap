@@ -10,10 +10,10 @@ import BadgeUnlockCard from './BadgeUnlockCard';
 import SpeechButton from './SpeechButton';
 
 const ResultsView: React.FC = () => {
-  const { score, handleRestart, handleBackToSubjects, selectedSubject, newlyEarnedBadges, handleBackToTopicSelection, selectedTopic } = useGame();
-  const totalQuestions = QUIZ_LENGTH;
+  const { score, questions, handleRestart, handleBackToSubjects, selectedSubject, newlyEarnedBadges, handleBackToTopicSelection, selectedTopic } = useGame();
+  const totalQuestions = questions.length || QUIZ_LENGTH;
 
-  const percentage = (score / totalQuestions) * 100;
+  const percentage = totalQuestions > 0 ? (score / totalQuestions) * 100 : 0;
   let message = "";
   let emoji = "";
 

@@ -88,3 +88,14 @@ export interface ReadingRecord {
   analysis: ReadingAnalysis;
   timestamp: number;
 }
+
+export interface UserData {
+    earnedBadges: string[];
+    stats: QuizStats;
+    readingHistory: ReadingRecord[];
+    // Các trường mới để theo dõi tiến trình
+    lastPlayDate: string; // Định dạng 'YYYY-MM-DD'
+    consecutivePlayDays: number;
+    perfectScoreStreak: number; // Chuỗi điểm tuyệt đối trên các bài quiz
+    dailyHistory: { date: string; quizzes: number; subjects: Set<string>; topics: Set<string> };
+}

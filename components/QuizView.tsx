@@ -45,7 +45,23 @@ const QuizView: React.FC = () => {
         break;
       case 'MULTIPLE_CHOICE':
       case 'FILL_IN_THE_BLANK':
-        correct = (userAnswer as string).trim().toLowerCase() === currentQuestion.correctAnswer.trim().toLowerCase();
+        const userAnswerStr = (userAnswer as string).trim();
+        const correctAnswerStr = currentQuestion.correctAnswer.trim();
+        
+        // Một kiểm tra mạnh mẽ cho các giá trị số.
+        // Nó xử lý các trường hợp chuỗi là "123" hoặc "123.45" nhưng không phải là "123a"
+        const isUserAnswerNumeric = userAnswerStr !== '' && !isNaN(Number(userAnswerStr));
+        const isCorrectAnswerNumeric = correctAnswerStr !== '' && !isNaN(Number(correctAnswerStr));
+
+        if (isUserAnswerNumeric && isCorrectAnswerNumeric) {
+            // So sánh dưới dạng số để tránh các vấn đề về dấu phẩy động và sự không nhất quán về kiểu.
+            correct = Number(userAnswerStr) === Number(correctAnswerStr);
+        } else {
+            // Trở lại so sánh chuỗi không phân biệt chữ hoa chữ thường cho các câu trả lời không phải là số.
+            // Đồng thời, loại bỏ các dấu câu phổ biến ở cuối mà AI có thể thêm vào do nhầm lẫn.
+            const normalize = (str: string) => str.toLowerCase().replace(/[.,!?;]$/, '').trim();
+            correct = normalize(userAnswerStr) === normalize(correctAnswerStr);
+        }
         break;
     }
     

@@ -1,6 +1,8 @@
+
+
 import React, { createContext, useState, useCallback, useContext, ReactNode } from 'react';
 // FIX: Import 'QuizStats' type to resolve 'Cannot find name' errors.
-import { GameState, Question, Subject, Topic, Badge, QuizStats } from '../types';
+import { GameState, Question, Subject, Topic, Badge, QuizStats, TopicStats } from '../types';
 import { generateQuiz, generateExam } from '../services/geminiService';
 import { useUser } from './UserContext';
 import { BADGES, QUIZ_LENGTH, TOPICS } from '../constants';
@@ -133,78 +135,177 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
 
     const handleQuizComplete = (finalScore: number) => {
+        if (!selectedSubject) {
+            setScore(finalScore);
+            setGameState('results');
+            return;
+        }
+
+        const statsBefore = user.getUserData();
+        const statsAfter = user.updatePostQuizData(
+            selectedSubject.id, 
+            selectedTopic?.id || 'exam', 
+            finalScore, 
+            questions.length || QUIZ_LENGTH
+        );
+
         let currentNewBadges: Badge[] = [];
-        // For regular quizzes, update stats.
-        if (selectedSubject && selectedTopic) {
-             const statsBefore = JSON.parse(JSON.stringify(user.stats));
-            user.updateStats(selectedSubject.id, selectedTopic.id, finalScore, QUIZ_LENGTH);
-            const statsAfter = user.stats;
-            
-            const isPerfectScore = finalScore === QUIZ_LENGTH;
-
-            const getTotalQuizzes = (s: QuizStats) => Object.values(s)
-                .flatMap(subject => Object.values(subject))
-                .reduce((total, topic) => total + topic.timesCompleted, 0);
-
-            const getTotalPerfectScores = (s: QuizStats) => Object.values(s)
-                .flatMap(subject => Object.values(subject))
-                .reduce((total, topic) => total + (topic.perfectScoreCount || 0), 0);
-            
-            const totalQuizzesBefore = getTotalQuizzes(statsBefore);
-            const totalQuizzesAfter = getTotalQuizzes(statsAfter);
-            const totalPerfectScoresBefore = getTotalPerfectScores(statsBefore);
-            const totalPerfectScoresAfter = getTotalPerfectScores(statsAfter);
-
-
-            for (const badge of BADGES) {
-                if (user.earnedBadges.includes(badge.id)) continue;
-
-                let earned = false;
-                switch (badge.id) {
-                    case 'first_quiz':
-                        if (totalQuizzesBefore === 0) earned = true;
-                        break;
-                    case 'perfect_score':
-                        if (isPerfectScore) earned = true;
-                        break;
-                    case 'math_whiz':
-                        if (isPerfectScore && selectedSubject.id === 'toan_hoc') earned = true;
-                        break;
-                    case 'language_lover':
-                        if (isPerfectScore && selectedSubject.id === 'tieng_viet') earned = true;
-                        break;
-                    case 'science_sleuth':
-                        if (isPerfectScore && selectedSubject.id === 'tu_nhien_xa_hoi') earned = true;
-                        break;
-                    case 'marathon_runner':
-                        if (totalQuizzesBefore < 10 && totalQuizzesAfter >= 10) earned = true;
-                        break;
-                    case 'perfectionist':
-                        if (totalPerfectScoresBefore < 3 && totalPerfectScoresAfter >= 3) earned = true;
-                        break;
-                    case 'subject_master':
-                        const subjectTopics = TOPICS[selectedSubject.id].filter(t => t.id !== 'doc_doan_van'); // Exclude reading practice
-                        const completedTopics = Object.keys(statsAfter[selectedSubject.id] || {});
-                        if (subjectTopics.every(topic => completedTopics.includes(topic.id))) {
-                            earned = true;
-                        }
-                        break;
-                }
-
-                if (earned) {
+        const tryAddBadge = (badgeId: string) => {
+            if (!statsAfter.earnedBadges.includes(badgeId)) {
+                const badge = BADGES.find(b => b.id === badgeId);
+                if (badge && !currentNewBadges.some(b => b.id === badgeId)) {
                     currentNewBadges.push(badge);
-                    user.addBadge(badge.id);
                 }
+            }
+        };
+        
+        const questionCount = questions.length;
+        const isPerfectScore = finalScore === questionCount;
+
+        const getStatCount = (s: QuizStats, getter: (topic: TopicStats) => number) => 
+            Object.values(s)
+                  .flatMap(subject => Object.values(subject))
+                  .reduce((total, topic) => total + getter(topic), 0);
+        
+        const totalQuizzesBefore = getStatCount(statsBefore.stats, topic => topic.timesCompleted);
+        const totalQuizzesAfter = getStatCount(statsAfter.stats, topic => topic.timesCompleted);
+        const totalPerfectScoresBefore = getStatCount(statsBefore.stats, topic => topic.perfectScoreCount);
+        const totalPerfectScoresAfter = getStatCount(statsAfter.stats, topic => topic.perfectScoreCount);
+        const totalCorrectBefore = getStatCount(statsBefore.stats, topic => topic.totalCorrect);
+        const totalCorrectAfter = getStatCount(statsAfter.stats, topic => topic.totalCorrect);
+
+        // --- I. Cột Mốc Vĩ Đại ---
+        if (totalQuizzesBefore < 1 && totalQuizzesAfter >= 1) tryAddBadge('first_quiz');
+        if (totalQuizzesBefore < 10 && totalQuizzesAfter >= 10) tryAddBadge('marathon_runner');
+        if (totalQuizzesBefore < 25 && totalQuizzesAfter >= 25) tryAddBadge('quiz_pro_25');
+        if (totalQuizzesBefore < 50 && totalQuizzesAfter >= 50) tryAddBadge('quiz_master_50');
+        if (totalQuizzesBefore < 75 && totalQuizzesAfter >= 75) tryAddBadge('quiz_pro_75');
+        if (totalQuizzesBefore < 100 && totalQuizzesAfter >= 100) tryAddBadge('quiz_legend_100');
+        if (totalQuizzesBefore < 150 && totalQuizzesAfter >= 150) tryAddBadge('quiz_master_150');
+        if (totalQuizzesBefore < 200 && totalQuizzesAfter >= 200) tryAddBadge('quiz_legend_200');
+        if (totalQuizzesBefore < 300 && totalQuizzesAfter >= 300) tryAddBadge('quiz_titan_300');
+        if (totalQuizzesBefore < 500 && totalQuizzesAfter >= 500) tryAddBadge('quiz_demigod_500');
+
+        if (totalCorrectBefore < 100 && totalCorrectAfter >= 100) tryAddBadge('correct_100');
+        if (totalCorrectBefore < 500 && totalCorrectAfter >= 500) tryAddBadge('correct_500');
+        if (totalCorrectBefore < 1000 && totalCorrectAfter >= 1000) tryAddBadge('correct_1000');
+        if (totalCorrectBefore < 2500 && totalCorrectAfter >= 2500) tryAddBadge('correct_2500');
+        if (totalCorrectBefore < 5000 && totalCorrectAfter >= 5000) tryAddBadge('correct_5000');
+        
+        // --- II. Sự Hoàn Hảo & Tốc Độ ---
+        if (isPerfectScore) {
+            tryAddBadge('perfect_score');
+            if (statsAfter.perfectScoreStreak >= 3) tryAddBadge('perfect_streak_3');
+            if (statsAfter.perfectScoreStreak >= 5) tryAddBadge('perfect_streak_5');
+        }
+        if (totalPerfectScoresBefore < 3 && totalPerfectScoresAfter >= 3) tryAddBadge('perfectionist');
+        if (totalPerfectScoresBefore < 5 && totalPerfectScoresAfter >= 5) tryAddBadge('perfect_score_5');
+        if (totalPerfectScoresBefore < 10 && totalPerfectScoresAfter >= 10) tryAddBadge('perfect_score_10');
+        if (totalPerfectScoresBefore < 15 && totalPerfectScoresAfter >= 15) tryAddBadge('perfect_score_15');
+        if (totalPerfectScoresBefore < 25 && totalPerfectScoresAfter >= 25) tryAddBadge('perfect_score_25');
+        if (totalPerfectScoresBefore < 50 && totalPerfectScoresAfter >= 50) tryAddBadge('perfect_score_50');
+        
+        // Exam Badges
+        if (examDuration) {
+            if(examDuration === 'long') tryAddBadge('brave_challenger');
+            const examPercentage = (finalScore / questionCount) * 100;
+            if (examPercentage >= 80) {
+                if (examDuration === 'short') tryAddBadge('exam_ace_short');
+                if (examDuration === 'medium') tryAddBadge('exam_ace_medium');
+                if (examDuration === 'long') tryAddBadge('exam_ace_long');
+            }
+            if (isPerfectScore) {
+                if (examDuration === 'short') tryAddBadge('exam_perfect_short');
+                if (examDuration === 'medium') tryAddBadge('exam_perfect_medium');
+                if (examDuration === 'long') tryAddBadge('exam_perfect_long');
+            }
+        }
+
+        // --- III. Chuyên Cần & Bền Bỉ ---
+        if (statsAfter.consecutivePlayDays >= 3) tryAddBadge('daily_streak_3');
+        if (statsAfter.consecutivePlayDays >= 7) tryAddBadge('daily_streak_7');
+        if (statsAfter.consecutivePlayDays >= 14) tryAddBadge('daily_streak_14');
+        if (statsAfter.consecutivePlayDays >= 30) tryAddBadge('daily_streak_30');
+        
+        const now = new Date();
+        const hour = now.getHours();
+        const day = now.getDay(); // 0 = Sunday, 6 = Saturday
+        if (hour < 7) tryAddBadge('early_bird');
+        if (hour >= 21) tryAddBadge('night_owl');
+        if (day > 0 && day < 6 && statsAfter.dailyHistory.quizzes >= 5) tryAddBadge('weekday_warrior'); // simplified
+        if ((day === 0 || day === 6) && statsAfter.dailyHistory.quizzes >= 5) tryAddBadge('weekend_wonder'); // simplified
+
+        if (statsAfter.dailyHistory.quizzes >= 10) tryAddBadge('unstoppable_force');
+        if (statsAfter.dailyHistory.subjects.size === 3) tryAddBadge('subject_cycler');
+        if (statsAfter.dailyHistory.topics.size >= 5) tryAddBadge('topic_hopper');
+
+        // --- IV. Bậc Thầy Môn Học ---
+        if (isPerfectScore && selectedTopic) {
+            if (selectedSubject.id === 'toan_hoc') tryAddBadge('math_whiz');
+            if (selectedSubject.id === 'tieng_viet') tryAddBadge('language_lover');
+            if (selectedSubject.id === 'tu_nhien_xa_hoi') tryAddBadge('science_sleuth');
+
+            const topicBadgeMap: { [key: string]: string } = {
+                'phep_cong_tru_1000': 'addition_ace', 'phep_nhan_chia_bang_2_10': 'multiplication_master',
+                'hinh_hoc_co_ban': 'geometry_genius', 'xem_dong_ho': 'time_teller',
+                'giai_toan_loi_van': 'word_problem_whiz', 'do_dai_do_luong': 'measurement_maven',
+                'so_sanh': 'comparison_champ', 'tu_chi_su_vat': 'word_wizard',
+                'cau_ai_la_gi': 'sentence_superstar', 'doc_hieu_doan_van': 'reading_champion',
+                'cay_xanh': 'botanist_buddy', 'dong_vat': 'animal_expert',
+                'an_toan_giao_thong': 'safety_squad',
+            };
+            if (topicBadgeMap[selectedTopic.id]) tryAddBadge(topicBadgeMap[selectedTopic.id]);
+        }
+        
+        // Subject mastery
+        for (const subject of ['toan_hoc', 'tieng_viet', 'tu_nhien_xa_hoi']) {
+            const subjectTopics = TOPICS[subject].filter(t => t.id !== 'doc_doan_van');
+            const subjectStats = statsAfter.stats[subject] || {};
+            if (subjectTopics.every(t => (subjectStats[t.id]?.perfectScoreCount || 0) > 0)) {
+                tryAddBadge(`${subject}_mastery`);
+            }
+
+            let totalCorrect = 0, totalQuestions = 0;
+            Object.values(subjectStats).forEach(topic => {
+                totalCorrect += topic.totalCorrect;
+                totalQuestions += topic.totalQuestions;
+            });
+            if (totalQuestions > 20 && (totalCorrect / totalQuestions) >= 0.9) {
+                tryAddBadge(`${subject}_prodigy`);
             }
         }
         
-         if (examDuration === 'long' && !user.earnedBadges.includes('brave_challenger')) {
-            const badge = BADGES.find(b => b.id === 'brave_challenger');
-            if (badge) {
-                currentNewBadges.push(badge);
-                user.addBadge(badge.id);
-            }
+        // All-rounder & Curious Mind
+        const subjectsPlayed = Object.keys(statsAfter.stats);
+        if (subjectsPlayed.length === 3) {
+             tryAddBadge('curious_mind');
+             const hasPerfectInAll = ['toan_hoc', 'tieng_viet', 'tu_nhien_xa_hoi'].every(subId => 
+                Object.values(statsAfter.stats[subId] || {}).some(t => t.perfectScoreCount > 0)
+             );
+             if (hasPerfectInAll) tryAddBadge('all_rounder');
         }
+
+        if (selectedTopic) {
+            const topicStatsAfter = statsAfter.stats[selectedSubject.id]?.[selectedTopic.id];
+            if (topicStatsAfter.timesCompleted >= 5) tryAddBadge('persistent_player_5');
+            if (topicStatsAfter.timesCompleted >= 10) tryAddBadge(`topic_veteran_${selectedTopic.id}`);
+            if (topicStatsAfter.perfectScoreCount >= 5) tryAddBadge(`topic_superstar_${selectedTopic.id}`);
+            if (topicStatsAfter.perfectScoreCount >= 10) tryAddBadge(`topic_legend_${selectedTopic.id}`);
+        }
+        
+        // --- Meta Badges (Badge Collection) ---
+        const totalBadgesBefore = statsBefore.earnedBadges.length;
+        const totalBadgesAfter = statsAfter.earnedBadges.length + currentNewBadges.length;
+        
+        if (totalBadgesBefore < 20 && totalBadgesAfter >= 20) tryAddBadge('grand_master_20');
+        if (totalBadgesBefore < 40 && totalBadgesAfter >= 40) tryAddBadge('collector_40');
+        if (totalBadgesBefore < 60 && totalBadgesAfter >= 60) tryAddBadge('collector_60');
+        if (totalBadgesBefore < 80 && totalBadgesAfter >= 80) tryAddBadge('collector_80');
+        if (totalBadgesBefore < 100 && totalBadgesAfter >= 100) tryAddBadge('collector_100');
+        if (totalBadgesBefore < 120 && totalBadgesAfter >= 120) tryAddBadge('collector_120');
+        if (totalBadgesAfter === BADGES.length) tryAddBadge('ultimate_achiever');
+        
+        currentNewBadges.forEach(badge => user.addBadge(badge.id));
 
         setNewlyEarnedBadges(currentNewBadges);
         setScore(finalScore);
