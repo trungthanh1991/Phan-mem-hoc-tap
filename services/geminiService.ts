@@ -1,7 +1,3 @@
-
-
-
-
 // FIX: Import GenerateContentResponse to correctly type API responses.
 import { GoogleGenAI, Type, Modality, GenerateContentResponse } from "@google/genai";
 import { QUIZ_LENGTH } from '../constants';
@@ -10,7 +6,7 @@ import { Question, ReadingAnalysis, QuizStats } from '../types';
 // Lấy tất cả các khóa API từ biến môi trường và lọc ra những khóa hợp lệ.
 // Trong môi trường này, các biến "Secrets" được truy cập qua process.env
 const API_KEYS = [
- import.meta.env.VITE_API_KEY,
+  import.meta.env.VITE_API_KEY,
   import.meta.env.VITE_API_KEY_2,
   import.meta.env.VITE_API_KEY_3
 ].filter((key) => typeof key === "string" && !!key.trim());
@@ -318,7 +314,7 @@ export const analyzeReading = async (passage: string, audioBase64: string, mimeT
 
 // FIX: Explicitly type the API response to resolve 'Property 'text' does not exist on type 'unknown''.
         const response = await callGeminiWithRetry<GenerateContentResponse>((ai) => ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-2.5-pro',
             contents: { parts: [{ text: prompt }, audioPart] },
             config: {
                 responseMimeType: "application/json",
