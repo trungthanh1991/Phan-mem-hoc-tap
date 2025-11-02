@@ -4,7 +4,7 @@ import { useUser } from '../contexts/UserContext';
 import { SUBJECTS, TOPICS, QUIZ_LENGTH } from '../constants';
 import Button from './Button';
 import Card from './Card';
-import { CheckCircleIcon, MedalIcon, ChartBarIcon } from './icons';
+import { CheckCircleIcon, MedalIcon, ChartBarIcon, ClockIcon } from './icons';
 import ReadingFeedback from './ReadingFeedback';
 
 const StatCard: React.FC<{ icon: React.ElementType, value: string | number, label: string, color: string }> = ({ icon: Icon, value, label, color }) => (
@@ -53,7 +53,7 @@ const ParentsCornerView: React.FC = () => {
 
     return (
         <div className="w-full max-w-4xl mx-auto p-4 md:p-6 animate-fade-in-up relative">
-            <div className="absolute top-0 left-0 md:top-4 md-left-4">
+            <div className="absolute top-0 left-0 md:top-4 md:left-4">
                 <button onClick={handleBackToSubjects} className="text-primary hover:underline">&larr; Quay lại</button>
             </div>
             <h1 className="text-4xl md:text-5xl font-bold text-primary-dark mb-2 text-center mt-8 md:mt-0">Góc Phụ Huynh</h1>
@@ -69,6 +69,7 @@ const ParentsCornerView: React.FC = () => {
                 {SUBJECTS.map(subject => {
                     const subjectStats = stats[subject.id] || {};
                     const subjectTopics = TOPICS[subject.id] || [];
+                    const examStat = subjectStats['exam'];
                     
                     return (
                         <Card key={subject.id} className="bg-white/90 backdrop-blur-sm p-6">
@@ -95,7 +96,7 @@ const ParentsCornerView: React.FC = () => {
                                                 <div>
                                                     <p className="font-semibold text-secondary-dark">{topic.name}</p>
                                                     <p className="text-sm text-secondary">
-                                                        Làm {topicStat.timesCompleted} lần &bull; Điểm cao nhất: {topicStat.bestScore}/{QUIZ_LENGTH}
+                                                        Làm {topicStat.timesCompleted} lần &bull; Điểm cao nhất: {topicStat.bestScore}/{topic.id === 'doc_doan_van' ? topicStat.totalQuestions / topicStat.timesCompleted : QUIZ_LENGTH}
                                                     </p>
                                                 </div>
                                                 <PerformanceIndicator accuracy={accuracy} />
@@ -104,6 +105,25 @@ const ParentsCornerView: React.FC = () => {
                                     })}
                                 </ul>
                             )}
+                            
+                            {examStat && examStat.timesCompleted > 0 && (
+                                <div className="mt-6 pt-4 border-t-2 border-dashed">
+                                    <h4 className="text-xl font-bold text-secondary-dark mb-3 text-center flex items-center justify-center gap-2">
+                                        <ClockIcon className="h-6 w-6" />
+                                        <span>Thống kê Bài Thi Thử</span>
+                                    </h4>
+                                    <div className="p-4 rounded-lg bg-indigo-50/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                                        <div>
+                                            <p className="font-semibold text-secondary-dark">Tổng hợp các bài thi đã làm</p>
+                                            <p className="text-sm text-secondary">
+                                                Làm {examStat.timesCompleted} lần &bull; Điểm cao nhất: {examStat.bestScore} điểm
+                                            </p>
+                                        </div>
+                                        <PerformanceIndicator accuracy={examStat.totalQuestions > 0 ? (examStat.totalCorrect / examStat.totalQuestions) * 100 : 0} />
+                                    </div>
+                                </div>
+                            )}
+
                             {subject.id === 'tieng_viet' && readingHistory.length > 0 && (
                                 <div className="mt-6 pt-4 border-t-2 border-dashed">
                                     <h4 className="text-xl font-bold text-secondary-dark mb-3 text-center">Lịch sử Luyện Đọc</h4>

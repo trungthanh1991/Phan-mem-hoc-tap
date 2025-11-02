@@ -39,9 +39,13 @@ const QuizView: React.FC = () => {
 
     let correct = false;
     switch (currentQuestion.type) {
-      case 'REARRANGE_WORDS':
-        correct = (userAnswer as string[]).join(' ').trim().toLowerCase() === currentQuestion.correctAnswer.trim().toLowerCase();
+      case 'REARRANGE_WORDS': {
+        const normalize = (str: string) => str.toLowerCase().replace(/[.,!?;]$/, '').trim();
+        const userAnswerStr = (userAnswer as string[]).join(' ').trim();
+        const correctAnswerStr = currentQuestion.correctAnswer.trim();
+        correct = normalize(userAnswerStr) === normalize(correctAnswerStr);
         break;
+      }
       case 'MULTIPLE_CHOICE':
       case 'FILL_IN_THE_BLANK':
         const userAnswerStr = (userAnswer as string).trim();

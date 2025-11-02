@@ -6,9 +6,9 @@ import { Question, ReadingAnalysis, QuizStats } from '../types';
 // Lấy tất cả các khóa API từ biến môi trường và lọc ra những khóa hợp lệ.
 // Trong môi trường này, các biến "Secrets" được truy cập qua process.env
 const API_KEYS = [
- import.meta.env.VITE_API_KEY,
+   import.meta.env.VITE_API_KEY,
   import.meta.env.VITE_API_KEY_2,
-  import.meta.env.VITE_API_KEY_
+  import.meta.env.VITE_API_KEY_3
 
 ].filter((key) => typeof key === "string" && !!key.trim());
 
@@ -132,7 +132,7 @@ export const generateQuiz = async (subjectName: string, topicName: string): Prom
                 Yêu cầu cho từng loại câu hỏi:
                 1.  **MULTIPLE_CHOICE**: 'question', 'options' (mảng 4 chuỗi), 'correctAnswer'.
                 2.  **FILL_IN_THE_BLANK**: 'questionParts' (mảng 2 chuỗi), 'correctAnswer'.
-                3.  **REARRANGE_WORDS**: 'question', 'words' (mảng từ), 'correctAnswer'.
+                3.  **REARRANGE_WORDS**: 'question', 'words' (mảng từ), 'correctAnswer'. Câu được tạo ra phải là một câu đơn giản, có ý nghĩa, dài từ 5 đến 8 từ. Mảng 'words' chỉ chứa các từ của câu đó và đã được xáo trộn. KHÔNG bao gồm dấu câu (như '.', '?', '!') dưới dạng các từ riêng lẻ trong mảng 'words'. Đáp án đúng 'correctAnswer' phải bao gồm dấu câu ở cuối. ĐẶC BIỆT: Nếu câu là một phép tính toán học (ví dụ: "15 + 5 = 20"), thì các toán tử (+, -, x, :) và dấu bằng (=) PHẢI được coi là các "từ" riêng biệt trong mảng 'words'.
 
                 Yêu cầu chung:
                 - Ngôn ngữ đơn giản, phù hợp với trẻ 8 tuổi.
@@ -204,7 +204,7 @@ export const generateExam = async (subjectName: string, durationPreference: 'sho
             Môn học: "${subjectName}".
 
             Yêu cầu chính:
-            1. Tạo một bài thi gồm CHÍNH XÁC ${numberOfQuestions} câu hỏi.
+            1. Tạo một bài thi gồm CHÍNH XÁC ${numberOfQuestions} câu hỏi. Số lượng câu hỏi phải là ${numberOfQuestions}, KHÔNG được ít hơn hay nhiều hơn.
             2. Nội dung thi phải bao quát TOÀN BỘ các chủ đề ôn tập của môn học.
             3. Quyết định một thời gian làm bài hợp lý (tính bằng giây) cho bài thi ${numberOfQuestions} câu hỏi này.
 
@@ -212,7 +212,7 @@ export const generateExam = async (subjectName: string, durationPreference: 'sho
             - Đây là lịch sử học tập của học sinh: ${JSON.stringify(userStats)}. Hãy phân tích dữ liệu này để cá nhân hóa bài thi. Những chủ đề có tỷ lệ chính xác thấp hơn nên được ưu tiên trong các câu hỏi.
             - Tạo ra một bộ câu hỏi đa dạng (trắc nghiệm, điền vào chỗ trống, sắp xếp từ).
             - Toàn bộ nội dung BẮT BUỘC phải là Tiếng Việt.
-            - Trả về kết quả dưới dạng một đối tượng JSON duy nhất có hai khóa: "timeLimitInSeconds" (một số nguyên) và "questions" (một mảng CHÍNH XÁC ${numberOfQuestions} đối tượng câu hỏi).
+            - Trả về kết quả dưới dạng một đối tượng JSON duy nhất có hai khóa: "timeLimitInSeconds" (một số nguyên) và "questions" (một mảng chứa CHÍNH XÁC ${numberOfQuestions} đối tượng câu hỏi).
             - Mỗi đối tượng câu hỏi phải có 'type', 'correctAnswer', 'explanation' và các trường cần thiết khác. Lời giải thích phải chỉ ra cách đi đến đáp án đúng một cách logic, không chỉ lặp lại đáp án.
         `;
 
