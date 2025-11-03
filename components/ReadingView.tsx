@@ -186,31 +186,10 @@ const ReadingView: React.FC = () => {
 
             const result = await analyzeReading(question.passage, base64Audio, mimeType);
             setAnalysisResult(result);
-            user.addReadingRecord(question.passage, result);
+            
+            // User context sẽ xử lý việc lưu và trao huy hiệu, sau đó trả về các huy hiệu mới
+            const newlyUnlockedBadges = user.addReadingRecord(question.passage, result);
 
-            // Logic trao huy hiệu cho phần Luyện Đọc
-            const preAnalysisUserData = user.getUserData();
-            const newlyUnlockedBadges: Badge[] = [];
-
-            const checkAndAddBadge = (badgeId: string) => {
-                if (!preAnalysisUserData.earnedBadges.includes(badgeId)) {
-                    const badge = BADGES.find(b => b.id === badgeId);
-                    if (badge) {
-                        user.addBadge(badge.id);
-                        newlyUnlockedBadges.push(badge);
-                    }
-                }
-            };
-    
-            // Kiểm tra các huy hiệu về độ chính xác
-            if (result.accuracy === 100) checkAndAddBadge('reading_legend');
-            if (result.accuracy >= 98) checkAndAddBadge('reading_virtuoso');
-            if (result.accuracy >= 95) checkAndAddBadge('reading_rockstar');
-    
-            // Kiểm tra huy hiệu về số lần luyện đọc
-            const readingHistoryCount = preAnalysisUserData.readingHistory.length;
-            if (readingHistoryCount + 1 >= 10) checkAndAddBadge('reading_adept');
-    
             setNewlyEarnedBadges(newlyUnlockedBadges);
             setStatus('feedback');
         } catch (err) {

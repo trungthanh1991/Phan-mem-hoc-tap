@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback } from 'react';
-import { QuizStats, TopicStats, ReadingRecord, ReadingAnalysis, UserData } from '../types';
+import { QuizStats, TopicStats, ReadingRecord, ReadingAnalysis, UserData, Badge } from '../types';
+import { BADGES } from '../constants';
 
 const STORAGE_KEY = 'sanChoiTriTue_userData_v2';
 
@@ -11,7 +12,7 @@ interface UserContextType {
     perfectScoreStreak: number;
     addBadge: (badgeId: string) => void;
     updatePostQuizData: (subjectId: string, topicId: string, score: number, totalQuestions: number) => UserData;
-    addReadingRecord: (passage: string, analysis: ReadingAnalysis) => void;
+    addReadingRecord: (passage: string, analysis: ReadingAnalysis) => Badge[];
     getWeakestTopicId: (subjectId: string) => string | null;
     getUserData: () => UserData;
 }
@@ -167,10 +168,41 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return updatedData!;
     }, []);
 
-    const addReadingRecord = (passage: string, analysis: ReadingAnalysis) => {
+    const addReadingRecord = useCallback((passage: string, analysis: ReadingAnalysis): Badge[] => {
         const newRecord: ReadingRecord = { passage, analysis, timestamp: Date.now() };
-        setUserData(prev => ({ ...prev, readingHistory: [newRecord, ...prev.readingHistory] }));
-    };
+        const newlyUnlockedBadges: Badge[] = [];
+        
+        setUserData(prev => {
+            const currentBadges = new Set(prev.earnedBadges);
+
+            // Helper to check for a new badge and add it
+            const checkAndAddBadge = (badgeId: string) => {
+                if (!currentBadges.has(badgeId)) {
+                    const badge = BADGES.find(b => b.id === badgeId);
+                    if (badge) {
+                        newlyUnlockedBadges.push(badge);
+                        currentBadges.add(badgeId);
+                    }
+                }
+            };
+
+            // Check accuracy badges
+            if (analysis.accuracy === 100) checkAndAddBadge('reading_legend');
+            if (analysis.accuracy >= 98) checkAndAddBadge('reading_virtuoso');
+            if (analysis.accuracy >= 95) checkAndAddBadge('reading_rockstar');
+
+            // Check reading count badge
+            if (prev.readingHistory.length + 1 >= 10) checkAndAddBadge('reading_adept');
+
+            return {
+                ...prev,
+                readingHistory: [newRecord, ...prev.readingHistory],
+                earnedBadges: Array.from(currentBadges),
+            };
+        });
+        
+        return newlyUnlockedBadges;
+    }, []);
     
     const getWeakestTopicId = (subjectId: string): string | null => {
         const subjectStats = userData.stats[subjectId];
