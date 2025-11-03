@@ -1,25 +1,48 @@
-
 import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
 import { QUIZ_LENGTH } from '../constants';
 import { Question, ReadingAnalysis, WritingAnalysis } from '../types';
-// Lấy tất cả các khóa API từ biến môi trường và lọc ra những khóa hợp lệ.
-// Trong môi trường này, các biến "Secrets" được truy cập qua process.env
+
+// Lấy danh sách các khóa API từ biến môi trường
 const API_KEYS = [
   import.meta.env.VITE_API_KEY,
   import.meta.env.VITE_API_KEY_2,
   import.meta.env.VITE_API_KEY_3
+].filter((key): key is string => typeof key === "string" && !!key.trim());
 
-].filter((key) => typeof key === "string" && !!key.trim());
-
-console.log("✅ Gemini API keys loaded:", API_KEYS.length);
-
-// The API key MUST be obtained from process.env.API_KEY.
-// This is automatically configured in the execution environment.
-if (!process.env.API_KEY) {
-    throw new Error("Chưa cấu hình khóa API cho Gemini. Vui lòng đảm bảo biến môi trường API_KEY đã được thiết lập.");
+if (API_KEYS.length === 0) {
+    throw new Error("Chưa cấu hình khóa API cho Gemini. Vui lòng đảm bảo ít nhất một trong các biến môi trường API_KEY, API_KEY_2, hoặc API_KEY_3 đã được thiết lập.");
 }
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+let currentKeyIndex = 0;
+
+// Hàm bao bọc (wrapper) để gọi Gemini API với cơ chế thử lại và luân chuyển key
+const callGeminiWithRetry = async (
+    apiCall: (ai: GoogleGenAI) => Promise<GenerateContentResponse>
+): Promise<GenerateContentResponse> => {
+    let lastError: any = null;
+    
+    // Thử mỗi key một lần, bắt đầu từ key đang hoạt động
+    for (let i = 0; i < API_KEYS.length; i++) {
+        const keyIndexToTry = (currentKeyIndex + i) % API_KEYS.length;
+        const apiKey = API_KEYS[keyIndexToTry];
+
+        try {
+            const ai = new GoogleGenAI({ apiKey });
+            const result = await apiCall(ai);
+            // Nếu thành công, cập nhật chỉ số key hiện tại và trả về kết quả
+            currentKeyIndex = keyIndexToTry;
+            return result;
+        } catch (error: any) {
+            console.error(`Lỗi khi sử dụng API key #${keyIndexToTry + 1}:`, error.message);
+            lastError = error;
+            // Vòng lặp sẽ tự động tiếp tục với key tiếp theo
+        }
+    }
+    
+    // Nếu vòng lặp kết thúc mà không thành công, nghĩa là tất cả các key đều lỗi.
+    console.error("Tất cả các API key đều không thành công.");
+    throw lastError || new Error("Đã thử hết các khóa API nhưng không thành công. Vui lòng kiểm tra lại các khóa.");
+};
 
 
 export const generateQuiz = async (subjectName: string, topicName: string): Promise<{ passage: string | null; questions: Question[] }> => {
@@ -125,15 +148,17 @@ export const generateQuiz = async (subjectName: string, topicName: string): Prom
             };
         }
 
-        const response: GenerateContentResponse = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
-            contents: prompt,
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: responseSchema,
-                thinkingConfig: { thinkingBudget: 0 },
-            },
-        });
+        const response: GenerateContentResponse = await callGeminiWithRetry(ai => 
+            ai.models.generateContent({
+                model: "gemini-2.5-flash",
+                contents: prompt,
+                config: {
+                    responseMimeType: "application/json",
+                    responseSchema: responseSchema,
+                    thinkingConfig: { thinkingBudget: 0 },
+                },
+            })
+        );
 
         const jsonText = response.text.trim();
         const data = JSON.parse(jsonText);
@@ -205,15 +230,17 @@ export const generateExam = async (subjectName: string, durationPreference: 'sho
             required: ["timeLimitInSeconds", "questions"]
         };
 
-        const response: GenerateContentResponse = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
-            contents: prompt,
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: responseSchema,
-                thinkingConfig: { thinkingBudget: 0 },
-            },
-        });
+        const response: GenerateContentResponse = await callGeminiWithRetry(ai => 
+            ai.models.generateContent({
+                model: "gemini-2.5-flash",
+                contents: prompt,
+                config: {
+                    responseMimeType: "application/json",
+                    responseSchema: responseSchema,
+                    thinkingConfig: { thinkingBudget: 0 },
+                },
+            })
+        );
 
         const jsonText = response.text.trim();
         const data = JSON.parse(jsonText);
@@ -277,14 +304,16 @@ export const analyzeReading = async (passage: string, audioBase64: string, mimeT
             required: ["accuracy", "incorrectWords", "unclearWords", "feedback"]
         };
 
-        const response: GenerateContentResponse = await ai.models.generateContent({
-            model: 'gemini-2.5-pro',
-            contents: { parts: [{ text: prompt }, audioPart] },
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: responseSchema,
-            }
-        });
+        const response: GenerateContentResponse = await callGeminiWithRetry(ai => 
+            ai.models.generateContent({
+                model: 'gemini-2.5-pro',
+                contents: { parts: [{ text: prompt }, audioPart] },
+                config: {
+                    responseMimeType: "application/json",
+                    responseSchema: responseSchema,
+                }
+            })
+        );
 
         const jsonText = response.text.trim();
         return JSON.parse(jsonText) as ReadingAnalysis;
@@ -336,14 +365,16 @@ export const analyzeHandwriting = async (passage: string, imageBase64: string): 
             required: ["legibilityScore", "neatnessScore", "correctnessScore", "positiveFeedback", "constructiveSuggestion"]
         };
 
-        const response: GenerateContentResponse = await ai.models.generateContent({
-            model: 'gemini-2.5-pro',
-            contents: { parts: [{ text: prompt }, imagePart] },
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: responseSchema,
-            }
-        });
+        const response: GenerateContentResponse = await callGeminiWithRetry(ai => 
+            ai.models.generateContent({
+                model: 'gemini-2.5-pro',
+                contents: { parts: [{ text: prompt }, imagePart] },
+                config: {
+                    responseMimeType: "application/json",
+                    responseSchema: responseSchema,
+                }
+            })
+        );
 
         const jsonText = response.text.trim();
         return JSON.parse(jsonText) as WritingAnalysis;
