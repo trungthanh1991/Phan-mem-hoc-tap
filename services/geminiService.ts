@@ -3,13 +3,33 @@ import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
 import { QUIZ_LENGTH } from '../constants';
 import { Question, ReadingAnalysis, WritingAnalysis } from '../types';
 
+const API_KEYS = [
+ import.meta.env.VITE_API_KEY,
+  import.meta.env.VITE_API_KEY_2,
+  import.meta.env.VITE_API_KEY_3
+].filter((key) => typeof key === "string" && !!key.trim());
+
+if (API_KEYS.length === 0) {
+    console.error("Lỗi: Không có khóa API Gemini nào được cấu hình. Vui lòng thiết lập các biến môi trường API_KEY.");
+} else {
+    console.log("✅ Đã tải thành công các khóa API Gemini:", API_KEYS.length);
+}
+
+let currentApiKeyIndex = 0;
+
+const getAiClient = () => {
+    if (API_KEYS.length === 0) {
+        throw new Error("Chưa cấu hình khóa API cho Gemini.");
+    }
+    const apiKey = API_KEYS[currentApiKeyIndex];
+    currentApiKeyIndex = (currentApiKeyIndex + 1) % API_KEYS.length;
+    return new GoogleGenAI({ apiKey });
+};
+
+
 export const generateQuiz = async (subjectName: string, topicName: string): Promise<{ passage: string | null; questions: Question[] }> => {
     try {
-        const apiKey = import.meta.env.VITE_API_KEY;
-        if (!apiKey) {
-            throw new Error("Chưa cấu hình khóa API cho Gemini. Vui lòng đảm bảo biến môi trường API_KEY đã được thiết lập.");
-        }
-        const ai = new GoogleGenAI({ apiKey });
+        const ai = getAiClient();
 
         let prompt = '';
         let responseSchema: any;
@@ -145,11 +165,7 @@ export const generateQuiz = async (subjectName: string, topicName: string): Prom
 
 export const generateExam = async (subjectName: string, durationPreference: 'short' | 'medium' | 'long'): Promise<{ timeLimitInSeconds: number; questions: Question[] }> => {
     try {
-        const apiKey = process.env.API_KEY;
-        if (!apiKey) {
-            throw new Error("Chưa cấu hình khóa API cho Gemini. Vui lòng đảm bảo biến môi trường API_KEY đã được thiết lập.");
-        }
-        const ai = new GoogleGenAI({ apiKey });
+        const ai = getAiClient();
 
         const questionCountMapping = {
             short: 10,
@@ -223,11 +239,7 @@ export const generateExam = async (subjectName: string, durationPreference: 'sho
 
 export const analyzeReading = async (passage: string, audioBase64: string, mimeType: string): Promise<ReadingAnalysis> => {
     try {
-        const apiKey = process.env.API_KEY;
-        if (!apiKey) {
-            throw new Error("Chưa cấu hình khóa API cho Gemini. Vui lòng đảm bảo biến môi trường API_KEY đã được thiết lập.");
-        }
-        const ai = new GoogleGenAI({ apiKey });
+        const ai = getAiClient();
 
         const audioPart = {
             inlineData: {
@@ -297,11 +309,7 @@ export const analyzeReading = async (passage: string, audioBase64: string, mimeT
 
 export const analyzeHandwriting = async (passage: string, imageBase64: string): Promise<WritingAnalysis> => {
     try {
-        const apiKey = process.env.API_KEY;
-        if (!apiKey) {
-            throw new Error("Chưa cấu hình khóa API cho Gemini. Vui lòng đảm bảo biến môi trường API_KEY đã được thiết lập.");
-        }
-        const ai = new GoogleGenAI({ apiKey });
+        const ai = getAiClient();
 
         const imagePart = {
             inlineData: {
