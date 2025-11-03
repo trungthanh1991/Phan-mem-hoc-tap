@@ -9,7 +9,7 @@ import WritingFeedback from './WritingFeedback';
 
 type Status = 'idle' | 'writing' | 'analyzing' | 'feedback' | 'error';
 
-// Custom hook để quản lý logic vẽ trên canvas
+// Custom hook để quản lý logic vẽ trên canvas, được tối ưu hóa cho di động
 const useCanvas = (
     clearColor = 'white', 
     lineColor = '#4b5563', // gray-600
@@ -71,62 +71,68 @@ const useCanvas = (
     }, [clearCanvas]);
     
 
-    const getCoords = (e: MouseEvent | TouchEvent): { x: number; y: number } | null => {
+    const getCoords = (e: PointerEvent): { x: number; y: number } | null => {
         const canvas = canvasRef.current;
         if (!canvas) return null;
         const rect = canvas.getBoundingClientRect();
-        
-        if (e instanceof MouseEvent) {
-            return { x: e.clientX - rect.left, y: e.clientY - rect.top };
-        }
-        if (e.touches && e.touches.length > 0) {
-            return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
-        }
-        return null;
+        return { x: e.clientX - rect.left, y: e.clientY - rect.top };
     };
 
-    const startDrawing = (e: React.MouseEvent | React.TouchEvent) => {
-        if (e.type === 'touchstart') {
-            e.preventDefault();
-        }
+    const startDrawing = (e: React.PointerEvent) => {
         const canvas = canvasRef.current;
         if (!canvas) return;
-        const coords = getCoords(e.nativeEvent);
+        const coords = getCoords(e.nativeEvent as PointerEvent);
         if (coords) {
             const ctx = canvas.getContext('2d');
             if (ctx) {
                 historyRef.current.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
                 setCanUndo(true);
 
+                (e.target as HTMLCanvasElement).setPointerCapture(e.pointerId);
+
                 ctx.beginPath();
                 ctx.moveTo(coords.x, coords.y);
+                ctx.strokeStyle = lineColor;
+                ctx.lineWidth = lineWidth;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
                 setIsDrawing(true);
                 setHasDrawn(true);
             }
         }
     };
 
-    const draw = (e: React.MouseEvent | React.TouchEvent) => {
-        if (e.type === 'touchmove') {
-            e.preventDefault();
-        }
+    const draw = (e: React.PointerEvent) => {
         if (!isDrawing) return;
-        const coords = getCoords(e.nativeEvent);
-        if (coords) {
-            const ctx = canvasRef.current?.getContext('2d');
-            if (ctx) {
-                ctx.strokeStyle = lineColor;
-                ctx.lineWidth = lineWidth;
-                ctx.lineCap = 'round';
-                ctx.lineJoin = 'round';
+        const canvas = canvasRef.current;
+        const ctx = canvas?.getContext('2d');
+        if (!ctx) return;
+        
+        // Sử dụng coalesced events để vẽ mượt mà và phản hồi nhanh hơn
+        const pointerEvents = (e.nativeEvent as PointerEvent).getCoalescedEvents();
+        let lastCoords = null;
+        
+        for (const event of pointerEvents) {
+            const coords = getCoords(event);
+            if (coords) {
                 ctx.lineTo(coords.x, coords.y);
-                ctx.stroke();
+                lastCoords = coords;
             }
+        }
+        
+        ctx.stroke();
+
+        if (lastCoords) {
+             ctx.beginPath();
+             ctx.moveTo(lastCoords.x, lastCoords.y);
         }
     };
 
-    const stopDrawing = () => {
-        setIsDrawing(false);
+    const stopDrawing = (e: React.PointerEvent) => {
+        if (isDrawing) {
+            (e.target as HTMLCanvasElement).releasePointerCapture(e.pointerId);
+            setIsDrawing(false);
+        }
     };
 
     const undo = useCallback(() => {
@@ -225,14 +231,12 @@ const WritingView: React.FC = () => {
                  <div className="relative">
                     <canvas
                         ref={canvasRef}
-                        onMouseDown={startDrawing}
-                        onMouseMove={draw}
-                        onMouseUp={stopDrawing}
-                        onMouseLeave={stopDrawing}
-                        onTouchStart={startDrawing}
-                        onTouchMove={draw}
-                        onTouchEnd={stopDrawing}
-                        className="w-full bg-white rounded-lg shadow-inner cursor-crosshair border-2 border-gray-200"
+                        onPointerDown={startDrawing}
+                        onPointerMove={draw}
+                        onPointerUp={stopDrawing}
+                        onPointerLeave={stopDrawing}
+                        onPointerCancel={stopDrawing}
+                        className="w-full bg-white rounded-lg shadow-inner cursor-crosshair border-2 border-gray-200 touch-none"
                     />
                      <div className="absolute top-2 right-2 flex gap-2">
                         <button
