@@ -46,12 +46,13 @@ export interface Subject {
   id: string;
   name: string;
   icon: React.ComponentType<{ className?: string }>;
-  gradientFrom: string;
-  gradientTo: string;
+  gradientFrom?: string;
+  gradientTo?: string;
   textColor: string;
   lightBgColor: string;
   borderColor: string;
   baseColor: string;
+  backgroundImage?: string;
 }
 
 export interface Topic {
@@ -80,7 +81,7 @@ export interface QuizStats {
   };
 }
 
-export type GameState = 'subject_selection' | 'topic_selection' | 'loading_quiz' | 'in_quiz' | 'results' | 'badge_collection' | 'parents_corner' | 'reading_activity' | 'exam_options' | 'loading_exam' | 'in_exam' | 'writing_activity';
+export type GameState = 'subject_selection' | 'topic_selection' | 'loading_quiz' | 'in_quiz' | 'results' | 'badge_collection' | 'parents_corner' | 'reading_activity' | 'exam_options' | 'loading_exam' | 'in_exam' | 'writing_activity' | 'review';
 
 export interface ReadingAnalysis {
   accuracy: number;

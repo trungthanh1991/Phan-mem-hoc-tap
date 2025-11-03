@@ -9,7 +9,7 @@ import Sparkles from './Sparkles';
 import BadgeUnlockCard from './BadgeUnlockCard';
 
 const ResultsView: React.FC = () => {
-  const { score, questions, handleRestart, handleBackToSubjects, selectedSubject, newlyEarnedBadges, handleBackToTopicSelection, selectedTopic } = useGame();
+  const { score, questions, handleRestart, handleBackToSubjects, selectedSubject, newlyEarnedBadges, handleBackToTopicSelection, selectedTopic, handleReviewQuiz } = useGame();
   const totalQuestions = questions.length || QUIZ_LENGTH;
 
   const percentage = totalQuestions > 0 ? (score / totalQuestions) * 100 : 0;
@@ -57,6 +57,9 @@ const ResultsView: React.FC = () => {
       <div className="flex flex-col sm:flex-row gap-4 justify-center">
         <Button onClick={handleRestart} variant="success">
           Chơi lại
+        </Button>
+        <Button onClick={handleReviewQuiz} variant="primary">
+          Xem lại bài làm
         </Button>
          <Button onClick={handleBackToSubjects} variant="secondary">
           Chọn môn khác

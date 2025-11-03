@@ -11,17 +11,25 @@ interface Props {
 
 const MultipleChoice: React.FC<Props> = ({ question, userAnswer, setUserAnswer, isAnswered }) => {
   const getOptionClasses = (option: string) => {
-    let baseClasses = 'w-full text-left p-4 rounded-xl border-2 transition-all duration-300 text-lg md:text-xl';
-    if (!isAnswered) {
-      return `${baseClasses} ${userAnswer === option ? 'bg-warning-light border-warning' : 'bg-white hover:bg-warning-light border-secondary-light'}`;
+    const baseClasses = 'w-full text-left p-4 rounded-xl border-2 transition-all duration-300 text-lg md:text-xl font-medium';
+    
+    if (isAnswered) {
+        const isCorrect = option === question.correctAnswer;
+        const isSelected = option === userAnswer;
+
+        if (isCorrect) {
+            return `${baseClasses} bg-success-light border-success ring-2 ring-success text-success-dark`;
+        }
+        if (isSelected && !isCorrect) {
+            return `${baseClasses} bg-danger-light border-danger ring-2 ring-danger text-danger-dark`;
+        }
+        return `${baseClasses} bg-white border-secondary-light opacity-70 cursor-not-allowed`;
     }
-    if (option === question.correctAnswer) {
-      return `${baseClasses} bg-success-light border-success cursor-not-allowed`;
+    
+    if (userAnswer === option) {
+        return `${baseClasses} bg-blue-100 border-primary ring-2 ring-primary`;
     }
-    if (option === userAnswer && option !== question.correctAnswer) {
-      return `${baseClasses} bg-danger-light border-danger cursor-not-allowed`;
-    }
-    return `${baseClasses} bg-gray-100 border-secondary-light text-secondary cursor-not-allowed`;
+    return `${baseClasses} bg-white hover:bg-blue-50 border-secondary-light`;
   };
   
   return (
@@ -35,8 +43,8 @@ const MultipleChoice: React.FC<Props> = ({ question, userAnswer, setUserAnswer, 
           <button
             key={index}
             onClick={() => setUserAnswer(option)}
-            disabled={isAnswered}
             className={getOptionClasses(option)}
+            disabled={isAnswered}
           >
             {option}
           </button>

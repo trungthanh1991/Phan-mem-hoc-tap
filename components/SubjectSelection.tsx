@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { SUBJECTS } from '../constants';
 import { useGame } from '../contexts/GameContext';
@@ -23,19 +22,31 @@ const SubjectSelection: React.FC = () => {
             <h1 className="text-4xl md:text-5xl font-bold text-primary-dark mb-2">Sân Chơi Trí Tuệ</h1>
             <p className="text-xl text-secondary mb-10">Chào mừng bé! Hãy chọn một môn học để bắt đầu nhé!</p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                {SUBJECTS.map((subject) => (
-                    <Card
-                        key={subject.id}
-                        onClick={() => handleSubjectSelect(subject)}
-                        className={`flex flex-col items-center justify-center text-center p-8 group hover:shadow-2xl transform hover:-translate-y-2 bg-gradient-to-br ${subject.gradientFrom} ${subject.gradientTo} ${subject.textColor}`}
-                    >
-                        <div className="relative">
-                            <subject.icon className="h-20 w-20 mb-4 transition-transform duration-300 group-hover:scale-110" />
-                            <div className="absolute inset-0 -z-10 bg-white/30 rounded-full blur-xl transition-opacity duration-300 opacity-0 group-hover:opacity-100"></div>
-                        </div>
-                        <span className="text-2xl font-bold">{subject.name}</span>
-                    </Card>
-                ))}
+                {SUBJECTS.map((subject) => {
+                    const hasBgImage = !!subject.backgroundImage;
+                    const bgStyle = hasBgImage ? { backgroundImage: `url(${subject.backgroundImage})` } : {};
+                    const bgClasses = hasBgImage
+                        ? 'bg-cover bg-center'
+                        : `bg-gradient-to-br ${subject.gradientFrom || ''} ${subject.gradientTo || ''}`;
+
+                    return (
+                        <Card
+                            key={subject.id}
+                            onClick={() => handleSubjectSelect(subject)}
+                            className={`relative overflow-hidden flex flex-col items-center justify-center text-center p-8 group hover:shadow-2xl transform hover:-translate-y-2 ${bgClasses} ${subject.textColor}`}
+                            style={bgStyle}
+                        >
+                            {hasBgImage && <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors duration-300"></div>}
+                            <div className="relative z-10 flex flex-col items-center justify-center">
+                                <div className="relative">
+                                    <subject.icon className="h-20 w-20 mb-4 transition-transform duration-300 group-hover:scale-110" />
+                                    <div className="absolute inset-0 -z-10 bg-white/30 rounded-full blur-xl transition-opacity duration-300 opacity-0 group-hover:opacity-100"></div>
+                                </div>
+                                <span className="text-2xl font-bold">{subject.name}</span>
+                            </div>
+                        </Card>
+                    );
+                })}
             </div>
             <div className="mt-12 text-center">
                 <button

@@ -87,8 +87,7 @@ const ReadingView: React.FC = () => {
         
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            const options = { mimeType: 'audio/webm' }; // Sử dụng MIME type chuẩn hơn
-            const mediaRecorder = new MediaRecorder(stream, options);
+            const mediaRecorder = new MediaRecorder(stream); // Để trình duyệt tự chọn định dạng tốt nhất
             mediaRecorderRef.current = mediaRecorder;
             const audioChunks: Blob[] = [];
 
@@ -99,7 +98,8 @@ const ReadingView: React.FC = () => {
             mediaRecorder.onstop = async () => {
                 stream.getTracks().forEach(track => track.stop());
                 
-                const blob = new Blob(audioChunks, { type: options.mimeType });
+                // Tạo blob với đúng mimeType mà trình duyệt đã sử dụng
+                const blob = new Blob(audioChunks, { type: mediaRecorder.mimeType });
                 
                 if (blob.size < 100) {
                     console.warn(`Bản ghi âm quá nhỏ (${blob.size} bytes), có thể do ghi âm quá ngắn.`);
@@ -149,22 +149,13 @@ const ReadingView: React.FC = () => {
         const mimeType = audioBlob.type;
         const base64Audio = await blobToBase64(audioBlob);
 
-        // ✅ GỌI API PHÂN TÍCH TỪ SERVER HOẶC GOOGLE APPS SCRIPT
-        const res = await fetch("https://script.google.com/macros/s/AKfycbyPxYOw_eRQ5QXtw67IeC8GQc38J3XpwpaWRtw5-IA8SUGCmkJkASf7Xs0qG2AqBsZQ/exec", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                passage: question.passage,
-                base64Audio: base64Audio,
-                mimeType: mimeType,
-            }),
+        // ✅ Sửa lỗi: Gọi qua API route an toàn thay vì gọi trực tiếp
+        const result = await analyzeReadingOnServer({
+            passage: question.passage,
+            audioBase64: base64Audio,
+            mimeType: mimeType,
         });
-
-        if (!res.ok) throw new Error("Không thể kết nối tới máy chủ phân tích giọng đọc.");
-        const result = await res.json();
-
-        if (result.error) throw new Error(result.error);
-
+        
         setAnalysisResult(result);
 
         // User context sẽ xử lý việc lưu và trao huy hiệu, sau đó trả về các huy hiệu mới

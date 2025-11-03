@@ -1,7 +1,6 @@
 
 
 import React, { createContext, useState, useCallback, useContext, ReactNode } from 'react';
-// FIX: Import 'QuizStats' type to resolve 'Cannot find name' errors.
 import { GameState, Question, Subject, Topic, Badge, QuizStats, TopicStats } from '../types';
 import { POST as generateQuizOnServer } from '../api/generate-quiz';
 import { POST as generateExamOnServer } from '../api/generate-exam';
@@ -19,9 +18,10 @@ interface GameContextType {
     error: string | null;
     newlyEarnedBadges: Badge[];
     examDuration: 'short' | 'medium' | 'long' | null;
+    userAnswers: (string | string[] | null)[];
     handleSubjectSelect: (subject: Subject) => void;
     handleTopicSelect: (topic: Topic) => Promise<void>;
-    handleQuizComplete: (finalScore: number) => void;
+    handleFinishQuiz: () => void;
     handleRestart: () => void;
     handleBackToSubjects: () => void;
     showBadgeCollection: () => void;
@@ -30,6 +30,10 @@ interface GameContextType {
     handleSelectExamDuration: (duration: 'short' | 'medium' | 'long') => Promise<void>;
     handleBackToTopicSelection: () => void;
     handleBackToExamOptions: () => void;
+    recordAnswer: (index: number, answer: string | string[] | null) => void;
+    incrementScore: () => void;
+    handleReviewQuiz: () => void;
+    handleBackToResults: () => void;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -45,6 +49,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [error, setError] = useState<string | null>(null);
     const [newlyEarnedBadges, setNewlyEarnedBadges] = useState<Badge[]>([]);
     const [examDuration, setExamDuration] = useState<'short' | 'medium' | 'long' | null>(null);
+    const [userAnswers, setUserAnswers] = useState<(string | string[] | null)[]>([]);
     const user = useUser();
 
     const resetQuizState = () => {
@@ -55,6 +60,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setNewlyEarnedBadges([]);
         setError(null);
         setExamDuration(null);
+        setUserAnswers([]);
     };
 
     const handleSubjectSelect = (subject: Subject) => {
@@ -80,7 +86,10 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setGameState('exam_options');
         resetQuizState();
     };
-
+    
+    const handleBackToResults = () => {
+        setGameState('results');
+    };
 
     const handleTopicSelect = useCallback(async (topic: Topic) => {
         if (!selectedSubject) return;
@@ -93,6 +102,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 topicName: topic.name
             });
             setQuestions(quizQuestions);
+            setUserAnswers(Array(quizQuestions.length).fill(null));
             setPassage(generatedPassage);
 
             if (topic.id === 'doc_doan_van') {
@@ -129,6 +139,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 durationPreference: duration
             });
             setQuestions(examQuestions);
+            setUserAnswers(Array(examQuestions.length).fill(null));
             setTimeLimit(timeLimitInSeconds);
             setPassage(null);
             setGameState('in_exam');
@@ -142,10 +153,20 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     }, [selectedSubject]);
 
+    const incrementScore = () => {
+        setScore(prev => prev + 1);
+    };
 
-    const handleQuizComplete = (finalScore: number) => {
+    const recordAnswer = (index: number, answer: string | string[] | null) => {
+        setUserAnswers(prev => {
+            const newAnswers = [...prev];
+            newAnswers[index] = answer;
+            return newAnswers;
+        });
+    };
+
+    const handleFinishQuiz = () => {
         if (!selectedSubject) {
-            setScore(finalScore);
             setGameState('results');
             return;
         }
@@ -154,7 +175,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const statsAfter = user.updatePostQuizData(
             selectedSubject.id, 
             selectedTopic?.id || 'exam', 
-            finalScore, 
+            score, 
             questions.length || QUIZ_LENGTH
         );
 
@@ -169,7 +190,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         };
         
         const questionCount = questions.length;
-        const isPerfectScore = finalScore === questionCount;
+        const isPerfectScore = score === questionCount;
 
         const getStatCount = (s: QuizStats, getter: (topic: TopicStats) => number) => 
             Object.values(s)
@@ -183,7 +204,6 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const totalCorrectBefore = getStatCount(statsBefore.stats, topic => topic.totalCorrect);
         const totalCorrectAfter = getStatCount(statsAfter.stats, topic => topic.totalCorrect);
 
-        // --- I. Cột Mốc Vĩ Đại ---
         if (totalQuizzesBefore < 1 && totalQuizzesAfter >= 1) tryAddBadge('first_quiz');
         if (totalQuizzesBefore < 10 && totalQuizzesAfter >= 10) tryAddBadge('marathon_runner');
         if (totalQuizzesBefore < 25 && totalQuizzesAfter >= 25) tryAddBadge('quiz_pro_25');
@@ -201,7 +221,6 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (totalCorrectBefore < 2500 && totalCorrectAfter >= 2500) tryAddBadge('correct_2500');
         if (totalCorrectBefore < 5000 && totalCorrectAfter >= 5000) tryAddBadge('correct_5000');
         
-        // --- II. Sự Hoàn Hảo & Tốc Độ ---
         if (isPerfectScore) {
             tryAddBadge('perfect_score');
             if (statsAfter.perfectScoreStreak >= 3) tryAddBadge('perfect_streak_3');
@@ -214,10 +233,9 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (totalPerfectScoresBefore < 25 && totalPerfectScoresAfter >= 25) tryAddBadge('perfect_score_25');
         if (totalPerfectScoresBefore < 50 && totalPerfectScoresAfter >= 50) tryAddBadge('perfect_score_50');
         
-        // Exam Badges
         if (examDuration) {
             if(examDuration === 'long') tryAddBadge('brave_challenger');
-            const examPercentage = (finalScore / questionCount) * 100;
+            const examPercentage = (score / questionCount) * 100;
             if (examPercentage >= 80) {
                 if (examDuration === 'short') tryAddBadge('exam_ace_short');
                 if (examDuration === 'medium') tryAddBadge('exam_ace_medium');
@@ -230,7 +248,6 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             }
         }
 
-        // --- III. Chuyên Cần & Bền Bỉ ---
         if (statsAfter.consecutivePlayDays >= 3) tryAddBadge('daily_streak_3');
         if (statsAfter.consecutivePlayDays >= 7) tryAddBadge('daily_streak_7');
         if (statsAfter.consecutivePlayDays >= 14) tryAddBadge('daily_streak_14');
@@ -238,17 +255,16 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         
         const now = new Date();
         const hour = now.getHours();
-        const day = now.getDay(); // 0 = Sunday, 6 = Saturday
+        const day = now.getDay();
         if (hour < 7) tryAddBadge('early_bird');
         if (hour >= 21) tryAddBadge('night_owl');
-        if (day > 0 && day < 6 && statsAfter.dailyHistory.quizzes >= 5) tryAddBadge('weekday_warrior'); // simplified
-        if ((day === 0 || day === 6) && statsAfter.dailyHistory.quizzes >= 5) tryAddBadge('weekend_wonder'); // simplified
+        if (day > 0 && day < 6 && statsAfter.dailyHistory.quizzes >= 5) tryAddBadge('weekday_warrior');
+        if ((day === 0 || day === 6) && statsAfter.dailyHistory.quizzes >= 5) tryAddBadge('weekend_wonder');
 
         if (statsAfter.dailyHistory.quizzes >= 10) tryAddBadge('unstoppable_force');
         if (statsAfter.dailyHistory.subjects.size === 3) tryAddBadge('subject_cycler');
         if (statsAfter.dailyHistory.topics.size >= 5) tryAddBadge('topic_hopper');
 
-        // --- IV. Bậc Thầy Môn Học ---
         if (isPerfectScore && selectedTopic) {
             if (selectedSubject.id === 'toan_hoc') tryAddBadge('math_whiz');
             if (selectedSubject.id === 'tieng_viet') tryAddBadge('language_lover');
@@ -266,7 +282,6 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             if (topicBadgeMap[selectedTopic.id]) tryAddBadge(topicBadgeMap[selectedTopic.id]);
         }
         
-        // Subject mastery
         for (const subject of ['toan_hoc', 'tieng_viet', 'tu_nhien_xa_hoi']) {
             const subjectTopics = TOPICS[subject].filter(t => t.id !== 'doc_doan_van');
             const subjectStats = statsAfter.stats[subject] || {};
@@ -284,7 +299,6 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             }
         }
         
-        // All-rounder & Curious Mind
         const subjectsPlayed = Object.keys(statsAfter.stats);
         if (subjectsPlayed.length === 3) {
              tryAddBadge('curious_mind');
@@ -302,7 +316,6 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             if (topicStatsAfter.perfectScoreCount >= 10) tryAddBadge(`topic_legend_${selectedTopic.id}`);
         }
         
-        // --- Meta Badges (Badge Collection) ---
         const totalBadgesBefore = statsBefore.earnedBadges.length;
         const totalBadgesAfter = statsAfter.earnedBadges.length + currentNewBadges.length;
         
@@ -317,12 +330,11 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         currentNewBadges.forEach(badge => user.addBadge(badge.id));
 
         setNewlyEarnedBadges(currentNewBadges);
-        setScore(finalScore);
         setGameState('results');
     };
 
     const handleRestart = () => {
-        const inExamMode = gameState === 'results' && timeLimit > 0;
+        const inExamMode = (gameState === 'results' || gameState === 'review') && timeLimit > 0;
         resetQuizState();
         if (inExamMode) {
             setGameState('exam_options');
@@ -331,6 +343,10 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         } else {
             setGameState('topic_selection');
         }
+    };
+
+    const handleReviewQuiz = () => {
+        setGameState('review');
     };
 
     const showBadgeCollection = () => {
@@ -352,9 +368,10 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         error,
         newlyEarnedBadges,
         examDuration,
+        userAnswers,
         handleSubjectSelect,
         handleTopicSelect,
-        handleQuizComplete,
+        handleFinishQuiz,
         handleRestart,
         handleBackToSubjects,
         showBadgeCollection,
@@ -363,6 +380,10 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         handleSelectExamDuration,
         handleBackToTopicSelection,
         handleBackToExamOptions,
+        recordAnswer,
+        incrementScore,
+        handleReviewQuiz,
+        handleBackToResults,
     };
 
     return <GameContext.Provider value={value}>{children}</GameContext.Provider>;

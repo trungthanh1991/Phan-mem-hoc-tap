@@ -8,33 +8,35 @@ import { Question, ReadingAnalysis, WritingAnalysis } from '../types';
 // Toàn bộ các hàm trong file này chỉ nên được gọi từ các API route (trong thư mục /api)
 // và không bao giờ được gọi trực tiếp từ các component React phía client.
 
-// Nâng cấp: Hỗ trợ nhiều API key để dự phòng và xoay vòng.
-// Ứng dụng sẽ tìm các key trong biến môi trường: API_KEY, API_KEY_2, API_KEY_3.
+// Lấy các khóa API từ biến môi trường và lọc ra những khóa hợp lệ.
 const API_KEYS = [
-  import.meta.env.VITE_API_KEY,
+ import.meta.env.VITE_API_KEY,
   import.meta.env.VITE_API_KEY_2,
   import.meta.env.VITE_API_KEY_3
 ].filter((key): key is string => typeof key === "string" && !!key.trim());
 
-if (API_KEYS.length > 0) {
-    console.log(`✅ Đã tải thành công ${API_KEYS.length} khóa API Gemini.`);
-} else {
-    console.error("❌ Lỗi: Không tìm thấy khóa API Gemini nào trong các biến môi trường (API_KEY, API_KEY_2, API_KEY_3).");
-}
+// Ghi log số lượng khóa API đã được tải thành công.
+console.log(`✅ Đã tải thành công ${API_KEYS.length} khóa API Gemini.`);
 
+// Biến để theo dõi chỉ số của khóa API đang được sử dụng.
 let currentApiKeyIndex = 0;
 
-export const getAiClient = () => {
+// Hàm để lấy AI client, có chức năng xoay vòng khóa API.
+const getAiClient = () => {
+    // Nếu không có khóa API nào được cấu hình, báo lỗi.
     if (API_KEYS.length === 0) {
-        const errorMessage = "Lỗi: Không có khóa API Gemini nào được cấu hình. Vui lòng thêm ít nhất một khóa vào biến môi trường.";
+        const errorMessage = "Lỗi: Không tìm thấy khóa API Gemini nào hợp lệ trong các biến môi trường (API_KEY, API_KEY_2, API_KEY_3).";
         console.error(errorMessage);
         throw new Error("Chưa cấu hình khóa API cho Gemini.");
     }
 
-    // Lấy API key hiện tại và chuẩn bị cho lần gọi tiếp theo (xoay vòng)
+    // Lấy khóa API hiện tại từ mảng.
     const apiKey = API_KEYS[currentApiKeyIndex];
+
+    // Cập nhật chỉ số cho lần gọi tiếp theo, xoay vòng nếu cần.
     currentApiKeyIndex = (currentApiKeyIndex + 1) % API_KEYS.length;
-    
+
+    // Trả về một instance mới của GoogleGenAI với khóa API đã chọn.
     return new GoogleGenAI({ apiKey });
 };
 
@@ -301,8 +303,8 @@ export const analyzeReading = async (passage: string, audioBase64: string, mimeT
         };
 
         const response: GenerateContentResponse = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: [prompt, audioPart],
+            model: 'gemini-2.5-pro',
+            contents: { parts: [ {text: prompt}, audioPart] },
             config: {
                 responseMimeType: "application/json",
                 responseSchema: responseSchema,
@@ -366,8 +368,8 @@ export const analyzeHandwriting = async (passage: string, imageBase64: string): 
         };
 
         const response: GenerateContentResponse = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: [prompt, imagePart],
+            model: 'gemini-2.5-pro',
+            contents: { parts: [ {text: prompt}, imagePart] },
             config: {
                 responseMimeType: "application/json",
                 responseSchema: responseSchema,

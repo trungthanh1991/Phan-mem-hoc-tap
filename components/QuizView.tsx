@@ -1,5 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
-import { CheckCircleIcon, XCircleIcon } from './icons';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useGame } from '../contexts/GameContext';
 import Card from './Card';
 import Button from './Button';
@@ -8,177 +7,223 @@ import FillInTheBlank from './questions/FillInTheBlank';
 import RearrangeWords from './questions/RearrangeWords';
 import Timer from './Timer';
 import SpeechButton from './SpeechButton';
+import { CheckCircleIcon, XCircleIcon } from './icons';
 
-const QuizView: React.FC = () => {
-  const { questions, handleQuizComplete, selectedSubject, passage, selectedTopic, gameState, timeLimit, handleBackToTopicSelection, handleBackToExamOptions } = useGame();
+interface QuizViewProps {
+  mode: 'quiz' | 'review';
+}
 
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [userAnswer, setUserAnswer] = useState<string | string[] | null>(null);
-  const [isAnswered, setIsAnswered] = useState(false);
-  const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
-  const [score, setScore] = useState(0);
+const QuizView: React.FC<QuizViewProps> = ({ mode }) => {
+    const { 
+        questions, selectedSubject, passage, selectedTopic, gameState, timeLimit, 
+        handleBackToTopicSelection, handleBackToExamOptions, userAnswers, 
+        incrementScore, recordAnswer, handleFinishQuiz, handleBackToResults
+    } = useGame();
 
-  const totalQuestions = useMemo(() => questions.length, [questions]);
-
-  // FIX: Add useCallback import from react to resolve 'Cannot find name' error.
-  const handleTimeUp = useCallback(() => {
-    // Pass the current score when time is up
-    handleQuizComplete(score);
-  }, [score, handleQuizComplete]);
-
-  if (!questions || totalQuestions === 0) {
-    return <div>Đang tải câu hỏi...</div>;
-  }
-
-  const currentQuestion = questions[currentQuestionIndex];
-
-  const normalizeAnswer = (input: string | string[]): string => {
-    const str = Array.isArray(input) ? input.join(' ') : String(input);
-    // 1. Chuyển thành chữ thường
-    // 2. Xóa khoảng trắng đầu/cuối
-    // 3. Xóa các dấu câu phổ biến ở cuối (. , ! ?)
-    return str.toLowerCase().trim().replace(/[.,!?;]$/, '');
-  };
-
-  const handleSubmitAnswer = () => {
-    if (userAnswer === null || userAnswer.length === 0) {
-      alert("Bé hãy trả lời câu hỏi nhé!");
-      return;
-    }
-
-    const normalizedUserAnswer = normalizeAnswer(userAnswer);
-    const normalizedCorrectAnswer = normalizeAnswer(currentQuestion.correctAnswer);
-
-    const correct = normalizedUserAnswer === normalizedCorrectAnswer;
+    const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+    const [currentUserAnswer, setCurrentUserAnswer] = useState<(string | string[] | null)>(null);
     
-    setIsCorrect(correct);
-    setIsAnswered(true);
-    if (correct) {
-      setScore(prev => prev + 1);
+    const isQuizMode = mode === 'quiz';
+    const isReviewMode = mode === 'review';
+    
+    const totalQuestions = questions.length;
+    if (!questions || totalQuestions === 0) {
+        return <div>Đang tải câu hỏi...</div>;
     }
-  };
 
-  const handleNextQuestion = () => {
-    setIsAnswered(false);
-    setUserAnswer(null);
-    setIsCorrect(null);
+    const currentQuestion = questions[currentQuestionIndex];
 
-    if (currentQuestionIndex < totalQuestions - 1) {
-      setCurrentQuestionIndex(prev => prev + 1);
-    } else {
-      handleQuizComplete(score);
-    }
-  };
-  
-  const renderQuestion = () => {
-    switch (currentQuestion.type) {
-      case 'MULTIPLE_CHOICE':
-        return <MultipleChoice 
-          question={currentQuestion}
-          userAnswer={userAnswer as string | null}
-          setUserAnswer={setUserAnswer}
-          isAnswered={isAnswered}
-        />
-      case 'FILL_IN_THE_BLANK':
-        return <FillInTheBlank 
-          question={currentQuestion}
-          userAnswer={userAnswer as string | null}
-          setUserAnswer={setUserAnswer}
-          isAnswered={isAnswered}
-        />
-      case 'REARRANGE_WORDS':
-        return <RearrangeWords
-          question={currentQuestion}
-          userAnswer={userAnswer as string[] | null}
-          setUserAnswer={setUserAnswer}
-          isAnswered={isAnswered}
-        />
-      {/* FIX: Add case for 'READ_ALOUD' to make the switch statement exhaustive.
-          This view is not intended to handle this question type, but this handles the case gracefully
-          to satisfy the type system and prevent crashes. */}
-      case 'READ_ALOUD':
-      case 'WRITE_PASSAGE':
-        return <div>Loại câu hỏi này không được hỗ trợ trong bài kiểm tra này.</div>;
-      default:
-        // TypeScript exhaustiveness check
-        const _exhaustiveCheck: never = currentQuestion;
-        return <div>Loại câu hỏi không xác định.</div>;
-    }
-  }
+    const isCurrentQuestionAnswered = useMemo(() => {
+        if (isReviewMode) return true;
+        return userAnswers[currentQuestionIndex] !== null;
+    }, [userAnswers, currentQuestionIndex, isReviewMode]);
 
-  const progressPercentage = useMemo(() => {
-    return ((currentQuestionIndex + 1) / totalQuestions) * 100;
-  }, [currentQuestionIndex, totalQuestions]);
+    const displayedAnswer = isCurrentQuestionAnswered 
+        ? userAnswers[currentQuestionIndex] 
+        : currentUserAnswer;
 
+    useEffect(() => {
+        if (isQuizMode && !isCurrentQuestionAnswered) {
+            setCurrentUserAnswer(null);
+        }
+    }, [currentQuestionIndex, isQuizMode, isCurrentQuestionAnswered]);
 
-  return (
-    <div className="w-full max-w-3xl mx-auto p-4 md:p-6 relative">
-       <div className="absolute top-0 left-0 md:top-4 md:left-4">
-            <button 
-                onClick={gameState === 'in_exam' ? handleBackToExamOptions : handleBackToTopicSelection} 
-                className="text-primary hover:underline"
-            >
-                &larr; Quay lại
-            </button>
-        </div>
-       
-       {gameState === 'in_exam' && timeLimit > 0 && (
-          <Timer initialSeconds={timeLimit} onTimeUp={handleTimeUp} />
-       )}
+    const handleTimeUp = useCallback(() => {
+        handleFinishQuiz();
+    }, [handleFinishQuiz]);
 
-       {passage && selectedTopic?.id === 'doc_hieu_doan_van' && (
-          <Card className="mb-6 bg-white/80 backdrop-blur-sm mt-8">
-            <div className="flex items-start gap-2">
-              <div className="flex-grow">
-                 <div className="flex justify-between items-start mb-2">
-                    <h3 className="text-xl font-bold text-primary-dark">Đoạn văn</h3>
-                    <SpeechButton textToSpeak={passage} />
+    const normalizeAnswer = (input: string | string[] | null): string => {
+      if (input === null) return '';
+      const str = Array.isArray(input) ? input.join(' ') : String(input);
+      return str.toLowerCase().trim().replace(/[.,!?;]$/, '');
+    };
+    
+    // FIX: Replaced undefined 'normalize' function with the defined 'normalizeAnswer' function.
+    const isCorrect = normalizeAnswer(userAnswers[currentQuestionIndex]) === normalizeAnswer(currentQuestion.correctAnswer);
+
+    const handleAnswerChange = (answer: string | string[]) => {
+        if (!isCurrentQuestionAnswered && isQuizMode) {
+            setCurrentUserAnswer(answer);
+        }
+    };
+
+    const handleCheckAnswer = () => {
+        if (currentUserAnswer === null || (Array.isArray(currentUserAnswer) && currentUserAnswer.length === 0)) return;
+
+        // FIX: Replaced undefined 'normalize' function with the defined 'normalizeAnswer' function.
+        const answerIsCorrect = normalizeAnswer(currentUserAnswer) === normalizeAnswer(currentQuestion.correctAnswer);
+        if (answerIsCorrect) {
+            incrementScore();
+        }
+        recordAnswer(currentQuestionIndex, currentUserAnswer);
+    };
+
+    const handleNext = () => {
+        if (currentQuestionIndex < totalQuestions - 1) {
+            setCurrentQuestionIndex(prev => prev + 1);
+        } else if (isQuizMode) {
+            handleFinishQuiz();
+        }
+    };
+    
+    const handlePrevious = () => {
+        if (currentQuestionIndex > 0) {
+            setCurrentQuestionIndex(prev => prev - 1);
+        }
+    };
+
+    const renderQuestion = () => {
+        switch (currentQuestion.type) {
+            case 'MULTIPLE_CHOICE':
+                return <MultipleChoice 
+                    question={currentQuestion}
+                    userAnswer={displayedAnswer as string | null}
+                    setUserAnswer={handleAnswerChange as (answer: string) => void}
+                    isAnswered={isCurrentQuestionAnswered}
+                />
+            case 'FILL_IN_THE_BLANK':
+                return <FillInTheBlank 
+                    question={currentQuestion}
+                    userAnswer={displayedAnswer as string | null}
+                    setUserAnswer={handleAnswerChange as (answer: string) => void}
+                    isAnswered={isCurrentQuestionAnswered}
+                />
+            case 'REARRANGE_WORDS':
+                return <RearrangeWords
+                    question={currentQuestion}
+                    userAnswer={displayedAnswer as string[] | null}
+                    setUserAnswer={handleAnswerChange as (answer: string[]) => void}
+                    isAnswered={isCurrentQuestionAnswered}
+                />
+            default: return <div>Loại câu hỏi không xác định.</div>;
+        }
+    };
+    
+    const progressPercentage = useMemo(() => {
+        const answeredCount = userAnswers.filter(ans => ans !== null).length;
+        return (answeredCount / totalQuestions) * 100;
+    }, [userAnswers, totalQuestions]);
+
+    const isLastQuestion = currentQuestionIndex === totalQuestions - 1;
+
+    return (
+        <div className="w-full max-w-3xl mx-auto p-4 md:p-6 relative">
+            <div className="absolute top-0 left-0 md:top-4 md:left-4">
+                <button 
+                    onClick={
+                        isReviewMode ? handleBackToResults : 
+                        (gameState === 'in_exam' ? handleBackToExamOptions : handleBackToTopicSelection)
+                    } 
+                    className="text-primary hover:underline"
+                >
+                    &larr; {isReviewMode ? 'Về trang kết quả' : 'Quay lại'}
+                </button>
+            </div>
+            
+            {isQuizMode && gameState === 'in_exam' && timeLimit > 0 && (
+                <Timer initialSeconds={timeLimit} onTimeUp={handleTimeUp} />
+            )}
+
+            {passage && selectedTopic?.id === 'doc_hieu_doan_van' && (
+                <Card className="mb-6 bg-white/80 backdrop-blur-sm mt-8">
+                    <div className="flex justify-between items-start mb-2">
+                        <h3 className="text-xl font-bold text-primary-dark">Đoạn văn</h3>
+                        <SpeechButton textToSpeak={passage} />
+                    </div>
+                    <p className="text-lg text-secondary-dark leading-relaxed">{passage}</p>
+                </Card>
+            )}
+
+            <div className="mb-6 mt-8">
+                <div className="flex justify-between items-center mb-2 text-secondary">
+                    <span>Câu hỏi {currentQuestionIndex + 1} / {totalQuestions}</span>
+                    {isCurrentQuestionAnswered && (
+                        isCorrect ? 
+                        <span className="flex items-center gap-1 font-bold text-success"><CheckCircleIcon className="h-5 w-5" /> Đúng</span> :
+                        <span className="flex items-center gap-1 font-bold text-danger"><XCircleIcon className="h-5 w-5" /> Sai</span>
+                    )}
                 </div>
-                <p className="text-lg text-secondary-dark leading-relaxed">{passage}</p>
-              </div>
+                <div className="w-full bg-secondary-light rounded-full h-4">
+                    <div className={`${selectedSubject?.baseColor || 'bg-primary'} h-4 rounded-full transition-all duration-500`} style={{ width: `${progressPercentage}%` }}></div>
+                </div>
             </div>
-          </Card>
-        )}
 
-      <div className="mb-6 mt-8">
-        <div className="flex justify-between items-center mb-2 text-secondary">
-          <span>Câu hỏi {currentQuestionIndex + 1} / {totalQuestions}</span>
-          <span>Điểm: {score}</span>
-        </div>
-        <div className="w-full bg-secondary-light rounded-full h-4">
-          <div className={`${selectedSubject?.baseColor || 'bg-primary'} h-4 rounded-full transition-all duration-500`} style={{ width: `${progressPercentage}%` }}></div>
-        </div>
-      </div>
+            <Card className={`${selectedSubject?.lightBgColor || 'bg-white'}`}>
+                {renderQuestion()}
+            </Card>
 
-      <Card className={`${selectedSubject?.lightBgColor || 'bg-white'}`}>
-        {renderQuestion()}
-      </Card>
-      
-      {isAnswered && (
-        <Card className={`mt-6 flex items-start space-x-4 ${isCorrect ? 'bg-success-light text-success-dark' : 'bg-danger-light text-danger-dark'}`}>
-          {isCorrect ? <CheckCircleIcon className="h-8 w-8 flex-shrink-0 text-success" /> : <XCircleIcon className="h-8 w-8 flex-shrink-0 text-danger" />}
-          <div className="flex-grow">
-            <h3 className="font-bold text-lg">{isCorrect ? "Chính xác! Hoan hô bé!" : "Tiếc quá, sai rồi!"}</h3>
-            <div className="flex items-start">
-              <p className="mt-1 flex-grow">{currentQuestion.explanation}</p>
+            {isCurrentQuestionAnswered && (
+                <Card className={`mt-6 ${isCorrect ? 'bg-success-light' : 'bg-danger-light'}`}>
+                    <h4 className="font-bold text-lg mb-2 flex items-center gap-2">
+                        {isCorrect ? 
+                            <CheckCircleIcon className="h-7 w-7 text-success-dark"/> : 
+                            <XCircleIcon className="h-7 w-7 text-danger-dark"/>
+                        }
+                        <span className={isCorrect ? 'text-success-dark' : 'text-danger-dark'}>
+                            {isCorrect ? 'Chính xác! Làm tốt lắm!' : 'Chưa đúng rồi, bé ơi!'}
+                        </span>
+                    </h4>
+                    <p className="text-secondary-dark">{currentQuestion.explanation}</p>
+                </Card>
+            )}
+
+            <div className="mt-8 grid grid-cols-3 gap-4 items-center">
+                <div className="text-left">
+                     <Button
+                        onClick={handlePrevious}
+                        variant="secondary"
+                        className={`py-3 px-6 text-lg ${currentQuestionIndex === 0 ? 'invisible' : ''}`}
+                    >
+                        &larr; Câu trước
+                    </Button>
+                </div>
+
+                <div className="text-center">
+                    {isQuizMode && !isCurrentQuestionAnswered && (
+                        <Button 
+                            onClick={handleCheckAnswer} 
+                            variant="primary" 
+                            disabled={currentUserAnswer === null || (Array.isArray(currentUserAnswer) && currentUserAnswer.length === 0)}
+                        >
+                            Kiểm tra
+                        </Button>
+                    )}
+                </div>
+
+                <div className="text-right">
+                    {(isReviewMode || (isQuizMode && isCurrentQuestionAnswered)) && (
+                        <Button 
+                            onClick={handleNext} 
+                            variant={isLastQuestion ? "success" : "primary"}
+                            className={`py-3 px-6 text-lg ${isLastQuestion && isReviewMode ? 'invisible' : ''}`}
+                        >
+                            {isLastQuestion ? 'Hoàn thành' : 'Câu tiếp theo →'}
+                        </Button>
+                    )}
+                </div>
             </div>
-          </div>
-        </Card>
-      )}
-
-      <div className="mt-8 text-center">
-        {!isAnswered ? (
-          <Button onClick={handleSubmitAnswer} variant="primary" disabled={!userAnswer || userAnswer.length === 0}>
-            Kiểm tra
-          </Button>
-        ) : (
-          <Button onClick={handleNextQuestion} variant="success" className="animate-pulse">
-            {currentQuestionIndex < totalQuestions - 1 ? 'Câu tiếp theo' : 'Xem kết quả'}
-          </Button>
-        )}
-      </div>
-    </div>
-  );
+        </div>
+    );
 };
 
 export default QuizView;

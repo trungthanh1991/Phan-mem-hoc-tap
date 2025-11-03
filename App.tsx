@@ -29,7 +29,9 @@ const App: React.FC = () => {
         return <LoadingView message="Đang tạo đề thi..." subMessage="AI đang chuẩn bị một thử thách đặc biệt cho bé!" />;
       case 'in_quiz':
       case 'in_exam':
-        return <QuizView />;
+        return <QuizView mode="quiz" />;
+      case 'review':
+        return <QuizView mode="review" />;
       case 'reading_activity':
         return <ReadingView />;
       case 'writing_activity':

@@ -4,8 +4,10 @@ import React from 'react';
 
 export const MathIcon: React.FC<{ className?: string }> = ({ className }) => (
   <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 5l-10 14" />
+    <rect strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} x="4" y="2" width="16" height="20" rx="2" ry="2" />
+    <line strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} x1="8" y1="6" x2="16" y2="6" />
+    <line strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} x1="12" y1="10" x2="12" y2="18" />
+    <line strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} x1="8" y1="14" x2="16" y2="14" />
   </svg>
 );
 
