@@ -1,61 +1,25 @@
 
-// FIX: Import GenerateContentResponse to correctly type API responses.
 import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
 import { QUIZ_LENGTH } from '../constants';
-import { Question, ReadingAnalysis } from '../types';
-
+import { Question, ReadingAnalysis, WritingAnalysis } from '../types';
 // Lấy tất cả các khóa API từ biến môi trường và lọc ra những khóa hợp lệ.
 // Trong môi trường này, các biến "Secrets" được truy cập qua process.env
 const API_KEYS = [
   import.meta.env.VITE_API_KEY,
   import.meta.env.VITE_API_KEY_2,
   import.meta.env.VITE_API_KEY_3
+
 ].filter((key) => typeof key === "string" && !!key.trim());
 
 console.log("✅ Gemini API keys loaded:", API_KEYS.length);
 
-
-if (API_KEYS.length === 0) {
-    throw new Error("Chưa cấu hình khóa API cho Gemini. Vui lòng thêm ít nhất một khóa API (API_KEY, API_KEY_2, API_KEY_3) vào mục 'Secrets'.");
+// The API key MUST be obtained from process.env.API_KEY.
+// This is automatically configured in the execution environment.
+if (!process.env.API_KEY) {
+    throw new Error("Chưa cấu hình khóa API cho Gemini. Vui lòng đảm bảo biến môi trường API_KEY đã được thiết lập.");
 }
 
-let currentKeyIndex = 0;
-
-/**
- * Một hàm bao bọc (wrapper) để thực hiện các lệnh gọi đến Gemini API với logic thử lại và luân chuyển khóa.
- * @param request Một hàm nhận vào một instance của GoogleGenAI và trả về một promise chứa kết quả gọi API.
- * @returns Kết quả từ lệnh gọi API thành công.
- * @throws Ném ra lỗi nếu tất cả các khóa API đều thất bại.
- */
-const callGeminiWithRetry = async <T>(
-    request: (ai: GoogleGenAI) => Promise<T>
-): Promise<T> => {
-    const maxRetries = API_KEYS.length;
-    for (let attempt = 0; attempt < maxRetries; attempt++) {
-        const apiKey = API_KEYS[currentKeyIndex];
-        const ai = new GoogleGenAI({ apiKey });
-
-        try {
-            console.log(`Đang thử yêu cầu với khóa API #${currentKeyIndex + 1}`);
-            const response = await request(ai);
-            // Yêu cầu thành công, trả về kết quả.
-            return response;
-        } catch (error) {
-            console.warn(`Khóa API #${currentKeyIndex + 1} thất bại.`, error);
-            // Chuyển sang khóa tiếp theo để thử lại.
-            currentKeyIndex = (currentKeyIndex + 1) % API_KEYS.length;
-
-            // Nếu đây là lần thử cuối cùng, ném ra lỗi.
-            if (attempt === maxRetries - 1) {
-                console.error("Tất cả các khóa API đều thất bại.");
-                // Ném lại lỗi cuối cùng để hàm gọi có thể xử lý.
-                throw error;
-            }
-        }
-    }
-    // Dòng này không nên đạt được nếu có ít nhất một khóa API, nhưng để đảm bảo an toàn.
-    throw new Error("Tất cả các khóa API đều không hợp lệ hoặc đã xảy ra lỗi không xác định.");
-};
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 
 export const generateQuiz = async (subjectName: string, topicName: string): Promise<{ passage: string | null; questions: Question[] }> => {
@@ -64,21 +28,24 @@ export const generateQuiz = async (subjectName: string, topicName: string): Prom
         let responseSchema: any;
         let isReadingComprehension = topicName === 'Đọc hiểu đoạn văn ngắn';
 
-        if (topicName === 'Luyện đọc') {
-            prompt = `
-                Bạn là một giáo viên tiểu học vui tính. Hãy tạo ra MỘT câu hỏi dạng ĐỌC THÀNH TIẾNG cho học sinh lớp 3 (8 tuổi).
-                - Tạo một đoạn văn Tiếng Việt ngắn (khoảng 30-50 từ), nội dung trong sáng, vui vẻ, phù hợp với trẻ em.
+        if (topicName === 'Luyện đọc' || topicName === 'Luyện viết') {
+             const activityType = topicName === 'Luyện đọc' ? 'READ_ALOUD' : 'WRITE_PASSAGE';
+             const passageLength = topicName === 'Luyện đọc' ? '30-50' : '20';
+
+             prompt = `
+                Bạn là một giáo viên tiểu học vui tính. Hãy tạo ra MỘT câu hỏi dạng ${activityType} cho học sinh lớp 3 (8 tuổi).
+                - Tạo một đoạn văn Tiếng Việt ngắn (khoảng ${passageLength} chữ), nội dung trong sáng, vui vẻ, phù hợp với trẻ em.
                 - Đoạn văn phải là đáp án đúng ('correctAnswer').
                 - Lời giải thích ('explanation') có thể để trống.
                 - Trả về kết quả dưới dạng một mảng JSON chứa một đối tượng duy nhất.
-                - Đối tượng phải có 'type' là 'READ_ALOUD' và 'passage' chứa đoạn văn đã tạo.
+                - Đối tượng phải có 'type' là '${activityType}' và 'passage' chứa đoạn văn đã tạo.
             `;
             responseSchema = {
                 type: Type.ARRAY,
                 items: {
                     type: Type.OBJECT,
                     properties: {
-                        type: { type: Type.STRING, enum: ['READ_ALOUD'] },
+                        type: { type: Type.STRING, enum: [activityType] },
                         passage: { type: Type.STRING },
                         correctAnswer: { type: Type.STRING },
                         explanation: { type: Type.STRING },
@@ -158,8 +125,7 @@ export const generateQuiz = async (subjectName: string, topicName: string): Prom
             };
         }
 
-// FIX: Explicitly type the API response to resolve 'Property 'text' does not exist on type 'unknown''.
-        const response = await callGeminiWithRetry<GenerateContentResponse>((ai) => ai.models.generateContent({
+        const response: GenerateContentResponse = await ai.models.generateContent({
             model: "gemini-2.5-flash",
             contents: prompt,
             config: {
@@ -167,7 +133,7 @@ export const generateQuiz = async (subjectName: string, topicName: string): Prom
                 responseSchema: responseSchema,
                 thinkingConfig: { thinkingBudget: 0 },
             },
-        }));
+        });
 
         const jsonText = response.text.trim();
         const data = JSON.parse(jsonText);
@@ -239,8 +205,7 @@ export const generateExam = async (subjectName: string, durationPreference: 'sho
             required: ["timeLimitInSeconds", "questions"]
         };
 
-// FIX: Explicitly type the API response to resolve 'Property 'text' does not exist on type 'unknown''.
-        const response = await callGeminiWithRetry<GenerateContentResponse>((ai) => ai.models.generateContent({
+        const response: GenerateContentResponse = await ai.models.generateContent({
             model: "gemini-2.5-flash",
             contents: prompt,
             config: {
@@ -248,7 +213,7 @@ export const generateExam = async (subjectName: string, durationPreference: 'sho
                 responseSchema: responseSchema,
                 thinkingConfig: { thinkingBudget: 0 },
             },
-        }));
+        });
 
         const jsonText = response.text.trim();
         const data = JSON.parse(jsonText);
@@ -312,15 +277,14 @@ export const analyzeReading = async (passage: string, audioBase64: string, mimeT
             required: ["accuracy", "incorrectWords", "unclearWords", "feedback"]
         };
 
-// FIX: Explicitly type the API response to resolve 'Property 'text' does not exist on type 'unknown''.
-        const response = await callGeminiWithRetry<GenerateContentResponse>((ai) => ai.models.generateContent({
+        const response: GenerateContentResponse = await ai.models.generateContent({
             model: 'gemini-2.5-pro',
             contents: { parts: [{ text: prompt }, audioPart] },
             config: {
                 responseMimeType: "application/json",
                 responseSchema: responseSchema,
             }
-        }));
+        });
 
         const jsonText = response.text.trim();
         return JSON.parse(jsonText) as ReadingAnalysis;
@@ -328,5 +292,64 @@ export const analyzeReading = async (passage: string, audioBase64: string, mimeT
     } catch (error) {
         console.error("Lỗi khi phân tích giọng đọc từ Gemini:", error);
         throw new Error("AI không thể phân tích bài đọc vào lúc này. Vui lòng thử lại sau.");
+    }
+};
+
+
+export const analyzeHandwriting = async (passage: string, imageBase64: string): Promise<WritingAnalysis> => {
+    try {
+        const imagePart = {
+            inlineData: {
+                mimeType: 'image/png',
+                data: imageBase64,
+            },
+        };
+
+        const prompt = `
+            Bạn là một giáo viên tiểu học kinh nghiệm, chuyên chấm bài tập viết cho học sinh lớp 3 (8 tuổi). 
+            Nhiệm vụ của bạn là phân tích hình ảnh chữ viết tay của một học sinh so với văn bản gốc.
+            
+            VĂN BẢN GỐC: "${passage}"
+
+            Phân tích hình ảnh chữ viết tay được cung cấp. KHÔNG chỉ đơn thuần là nhận dạng ký tự (OCR). 
+            Hãy đánh giá dựa trên các tiêu chí sau và cho điểm trên thang 100:
+            1.  **Độ dễ đọc (legibilityScore):** Chữ viết có rõ ràng, dễ nhận biết không?
+            2.  **Độ ngay ngắn (neatnessScore):** Các con chữ có gọn gàng, thẳng hàng, đúng dòng kẻ không?
+            3.  **Độ đúng chuẩn (correctnessScore):** Nét chữ có đúng chuẩn (chiều cao, độ rộng), dấu câu, dấu thanh có đặt đúng vị trí không?
+            4.  **Lời khen (positiveFeedback):** Viết MỘT câu khen ngợi ngắn gọn, cụ thể và chân thành về điểm tốt nhất trong bài viết của bé (khoảng 10-15 từ).
+            5.  **Góp ý (constructiveSuggestion):** Đưa ra MỘT lời khuyên nhẹ nhàng, cụ thể để bé có thể cải thiện ở lần viết sau (khoảng 10-15 từ).
+
+            Yêu cầu:
+            - Lời lẽ phải tích cực, động viên, phù hợp với tâm lý trẻ nhỏ.
+            - Trả về kết quả dưới dạng một đối tượng JSON duy nhất. KHÔNG trả về bất kỳ văn bản nào khác ngoài JSON.
+        `;
+
+        const responseSchema = {
+            type: Type.OBJECT,
+            properties: {
+                legibilityScore: { type: Type.NUMBER },
+                neatnessScore: { type: Type.NUMBER },
+                correctnessScore: { type: Type.NUMBER },
+                positiveFeedback: { type: Type.STRING },
+                constructiveSuggestion: { type: Type.STRING },
+            },
+            required: ["legibilityScore", "neatnessScore", "correctnessScore", "positiveFeedback", "constructiveSuggestion"]
+        };
+
+        const response: GenerateContentResponse = await ai.models.generateContent({
+            model: 'gemini-2.5-pro',
+            contents: { parts: [{ text: prompt }, imagePart] },
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: responseSchema,
+            }
+        });
+
+        const jsonText = response.text.trim();
+        return JSON.parse(jsonText) as WritingAnalysis;
+
+    } catch (error) {
+        console.error("Lỗi khi phân tích chữ viết tay từ Gemini:", error);
+        throw new Error("AI không thể phân tích bài viết vào lúc này. Vui lòng thử lại sau.");
     }
 };

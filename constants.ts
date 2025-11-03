@@ -1,9 +1,10 @@
 
 
 
+
 import { Subject, Topic, Badge } from './types';
 import { 
-    MathIcon, VietnameseIcon, ScienceIcon, TrophyIcon, CheckCircleIcon, MedalIcon, MicrophoneIcon, ClockIcon, StarIcon, BrainIcon, GraduationCapIcon, CrownIcon, TargetIcon, GlobeIcon, ShapesIcon, BookOpenIcon, LeafIcon, PawIcon, RepeatIcon, DocumentCheckIcon, LightbulbIcon, RulerIcon, ScaleIcon, MultiplyIcon, PlusIcon, TrophyStarIcon, DiamondIcon, RocketLaunchIcon, ShieldCheckIcon, PuzzlePieceIcon, FireIcon, BoltIcon, CalendarDaysIcon, SunIcon, MoonIcon, ArrowUpCircleIcon, HeartIcon
+    MathIcon, VietnameseIcon, ScienceIcon, TrophyIcon, CheckCircleIcon, MedalIcon, MicrophoneIcon, ClockIcon, StarIcon, BrainIcon, GraduationCapIcon, CrownIcon, TargetIcon, GlobeIcon, ShapesIcon, BookOpenIcon, LeafIcon, PawIcon, RepeatIcon, DocumentCheckIcon, LightbulbIcon, RulerIcon, ScaleIcon, MultiplyIcon, PlusIcon, TrophyStarIcon, DiamondIcon, RocketLaunchIcon, ShieldCheckIcon, PuzzlePieceIcon, FireIcon, BoltIcon, CalendarDaysIcon, SunIcon, MoonIcon, ArrowUpCircleIcon, HeartIcon, PencilIcon
 } from './components/icons';
 
 export const SUBJECTS: Subject[] = [
@@ -58,6 +59,7 @@ export const TOPICS: Record<string, Topic[]> = {
     { id: 'cau_ai_la_gi', name: 'Điền từ vào chỗ trống' },
     { id: 'doc_hieu_doan_van', name: 'Đọc hiểu đoạn văn ngắn' },
     { id: 'doc_doan_van', name: 'Luyện đọc' },
+    { id: 'luyen_viet', name: 'Luyện viết' },
   ],
   tu_nhien_xa_hoi: [
     { id: 'cay_xanh', name: 'Cây xanh quanh em' },

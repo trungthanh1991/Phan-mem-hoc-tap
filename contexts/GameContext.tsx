@@ -93,6 +93,8 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
             if (topic.id === 'doc_doan_van') {
                 setGameState('reading_activity');
+            } else if (topic.id === 'luyen_viet') {
+                setGameState('writing_activity');
             } else {
                 setGameState('in_quiz');
             }

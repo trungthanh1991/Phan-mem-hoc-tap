@@ -1,6 +1,6 @@
 import React from 'react';
 
-export type QuestionType = 'MULTIPLE_CHOICE' | 'FILL_IN_THE_BLANK' | 'REARRANGE_WORDS' | 'READ_ALOUD';
+export type QuestionType = 'MULTIPLE_CHOICE' | 'FILL_IN_THE_BLANK' | 'REARRANGE_WORDS' | 'READ_ALOUD' | 'WRITE_PASSAGE';
 
 interface BaseQuestion {
   type: QuestionType;
@@ -33,7 +33,13 @@ export interface ReadAloudQuestion extends BaseQuestion {
   passage: string;
 }
 
-export type Question = MultipleChoiceQuestion | FillInTheBlankQuestion | RearrangeWordsQuestion | ReadAloudQuestion;
+export interface WritePassageQuestion extends BaseQuestion {
+  type: 'WRITE_PASSAGE';
+  passage: string;
+}
+
+
+export type Question = MultipleChoiceQuestion | FillInTheBlankQuestion | RearrangeWordsQuestion | ReadAloudQuestion | WritePassageQuestion;
 
 
 export interface Subject {
@@ -74,7 +80,7 @@ export interface QuizStats {
   };
 }
 
-export type GameState = 'subject_selection' | 'topic_selection' | 'loading_quiz' | 'in_quiz' | 'results' | 'badge_collection' | 'parents_corner' | 'reading_activity' | 'exam_options' | 'loading_exam' | 'in_exam';
+export type GameState = 'subject_selection' | 'topic_selection' | 'loading_quiz' | 'in_quiz' | 'results' | 'badge_collection' | 'parents_corner' | 'reading_activity' | 'exam_options' | 'loading_exam' | 'in_exam' | 'writing_activity';
 
 export interface ReadingAnalysis {
   accuracy: number;
@@ -82,6 +88,15 @@ export interface ReadingAnalysis {
   unclearWords: string[];
   feedback: string;
 }
+
+export interface WritingAnalysis {
+  legibilityScore: number; // Điểm dễ đọc
+  neatnessScore: number; // Điểm ngay ngắn
+  correctnessScore: number; // Điểm đúng chuẩn
+  positiveFeedback: string; // Lời khen
+  constructiveSuggestion: string; // Góp ý
+}
+
 
 export interface ReadingRecord {
   passage: string;

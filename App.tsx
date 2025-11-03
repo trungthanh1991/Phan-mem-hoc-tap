@@ -9,6 +9,7 @@ import BadgeCollectionView from './components/BadgeCollectionView';
 import ParentsCornerView from './components/ParentsCornerView';
 import ReadingView from './components/ReadingView';
 import ExamOptionsView from './components/ExamOptionsView';
+import WritingView from './components/WritingView';
 
 const App: React.FC = () => {
   const { gameState } = useGame();
@@ -30,6 +31,8 @@ const App: React.FC = () => {
         return <QuizView />;
       case 'reading_activity':
         return <ReadingView />;
+      case 'writing_activity':
+        return <WritingView />;
       case 'results':
         return <ResultsView />;
       case 'badge_collection':

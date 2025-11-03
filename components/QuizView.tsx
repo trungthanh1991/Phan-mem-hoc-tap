@@ -96,6 +96,7 @@ const QuizView: React.FC = () => {
           This view is not intended to handle this question type, but this handles the case gracefully
           to satisfy the type system and prevent crashes. */}
       case 'READ_ALOUD':
+      case 'WRITE_PASSAGE':
         return <div>Loại câu hỏi này không được hỗ trợ trong bài kiểm tra này.</div>;
       default:
         // TypeScript exhaustiveness check
