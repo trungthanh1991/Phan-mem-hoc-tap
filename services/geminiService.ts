@@ -11,7 +11,7 @@ import { Question, ReadingAnalysis, WritingAnalysis } from '../types';
 // Nâng cấp: Hỗ trợ nhiều API key để dự phòng và xoay vòng.
 // Ứng dụng sẽ tìm các key trong biến môi trường: API_KEY, API_KEY_2, API_KEY_3.
 const API_KEYS = [
-   import.meta.env.VITE_API_KEY,
+  import.meta.env.VITE_API_KEY,
   import.meta.env.VITE_API_KEY_2,
   import.meta.env.VITE_API_KEY_3
 ].filter((key): key is string => typeof key === "string" && !!key.trim());
@@ -302,7 +302,7 @@ export const analyzeReading = async (passage: string, audioBase64: string, mimeT
 
         const response: GenerateContentResponse = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
-            contents: { parts: [{ text: prompt }, audioPart] },
+            contents: [prompt, audioPart],
             config: {
                 responseMimeType: "application/json",
                 responseSchema: responseSchema,
@@ -367,7 +367,7 @@ export const analyzeHandwriting = async (passage: string, imageBase64: string): 
 
         const response: GenerateContentResponse = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
-            contents: { parts: [{ text: prompt }, imagePart] },
+            contents: [prompt, imagePart],
             config: {
                 responseMimeType: "application/json",
                 responseSchema: responseSchema,
