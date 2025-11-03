@@ -11,7 +11,7 @@ import Spinner from './Spinner';
 import BadgeUnlockCard from './BadgeUnlockCard';
 import { MicrophoneIcon, StopCircleIcon, PlayCircleIcon, ArrowPathIcon } from './icons';
 
-type Status = 'idle' | 'requesting_permission' | 'recording' | 'recorded' | 'analyzing' | 'feedback' | 'error';
+type Status = 'idle' | 'requesting_permission' | 'recording' | 'uploading' | 'recorded' | 'analyzing' | 'feedback' | 'error';
 
 const blobToBase64 = (blob: Blob): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -37,6 +37,8 @@ const ReadingView: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [newlyEarnedBadges, setNewlyEarnedBadges] = useState<Badge[]>([]);
     const [isPlaying, setIsPlaying] = useState(false);
+    const [driveFileId, setDriveFileId] = useState<string | null>(null);
+
 
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const audioRef = useRef<HTMLAudioElement>(null);
@@ -51,6 +53,7 @@ const ReadingView: React.FC = () => {
         mediaRecorderRef.current = null;
         setAudioBlob(null);
         setAudioUrl(null);
+        setDriveFileId(null);
         setIsPlaying(false);
     }, [audioUrl]);
 
@@ -95,8 +98,9 @@ const ReadingView: React.FC = () => {
                 audioChunks.push(event.data);
             };
 
-            mediaRecorder.onstop = () => {
+            mediaRecorder.onstop = async () => {
                 stream.getTracks().forEach(track => track.stop());
+                setStatus('uploading');
 
                 const blob = new Blob(audioChunks, { type: options.mimeType });
                 
@@ -107,10 +111,42 @@ const ReadingView: React.FC = () => {
                     return;
                 }
 
-                const url = URL.createObjectURL(blob);
-                setAudioBlob(blob);
-                setAudioUrl(url);
-                setStatus('recorded');
+                try {
+                    const base64Audio = await blobToBase64(blob);
+                    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx13UzEbAtvN5po5auMGUDLUPbl32d3lpg7Q50Vu7KFzTWl7FUqhlvzy6S-F-qn0A7Z/exec';
+                    
+                    const response = await fetch(APPS_SCRIPT_URL, {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            base64: base64Audio,
+                            filename: `LuyenDoc_${new Date().toISOString()}.webm`
+                        }),
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Lỗi khi tải lên: ${response.statusText}`);
+                    }
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        console.log('File đã được lưu vào Drive. ID:', result.fileId);
+                        setDriveFileId(result.fileId);
+                        const url = URL.createObjectURL(blob);
+                        setAudioBlob(blob);
+                        setAudioUrl(url);
+                        setStatus('recorded');
+                    } else {
+                        throw new Error(result.error || "Backend báo lỗi không xác định.");
+                    }
+                } catch (uploadError) {
+                    console.error('Lỗi khi gửi file ghi âm đến Google Drive:', uploadError);
+                    setError(uploadError instanceof Error ? uploadError.message : "Không thể tải file ghi âm lên. Vui lòng kiểm tra kết nối mạng và thử lại.");
+                    setStatus('error');
+                }
             };
             
             mediaRecorder.start();
@@ -147,29 +183,6 @@ const ReadingView: React.FC = () => {
         try {
             const mimeType = audioBlob.type;
             const base64Audio = await blobToBase64(audioBlob);
-
-            // Gửi file ghi âm đến backend (Google Apps Script) để lưu trữ.
-            // Quá trình này chạy ngầm và không làm ảnh hưởng đến trải nghiệm của bé.
-            const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx13UzEbAtvN5po5auMGUDLUPbl32d3lpg7Q50Vu7KFzTWl7FUqhlvzy6S-F-qn0A7Z/exec';
-            fetch(APPS_SCRIPT_URL, {
-                method: 'POST',
-                body: JSON.stringify({
-                    base64: base64Audio,
-                    filename: `LuyenDoc_${new Date().toISOString()}.webm`
-                }),
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    console.log('File ghi âm đã được lưu thành công:', data.fileUrl);
-                } else {
-                    console.error('Lỗi từ Apps Script khi lưu file:', data.error);
-                }
-            })
-            .catch(error => {
-                console.error('Lỗi khi gửi file ghi âm đến Google Drive:', error);
-            });
-
 
             const result = await analyzeReading(question.passage, base64Audio, mimeType);
             setAnalysisResult(result);
@@ -252,10 +265,18 @@ const ReadingView: React.FC = () => {
                         <StopCircleIcon className="h-10 w-10"/>
                     </button>
                 )}
+                {status === 'uploading' && (
+                    <div className="flex flex-col items-center gap-4">
+                        <Spinner />
+                        <p className="text-secondary-dark font-semibold">
+                           Đang lưu bài đọc của bé, chờ một chút nhé...
+                        </p>
+                    </div>
+                )}
                  { (status === 'recorded' || isAnalyzing) && (
                     <div className="flex flex-col items-center gap-4 w-full max-w-md animate-fade-in-up">
                         {status === 'recorded' 
-                            ? <p className="text-secondary-dark mb-2">Bé đã ghi âm xong! Bấm 'Gửi đi phân tích' để AI chấm điểm, hoặc nghe lại/ghi âm lại nhé.</p>
+                            ? <p className="text-secondary-dark mb-2">Đã lưu xong! Bấm 'Gửi đi phân tích' để AI chấm điểm, hoặc nghe lại/ghi âm lại nhé.</p>
                             : <p className="text-secondary-dark font-semibold">AI đang lắng nghe và phân tích...</p>
                         }
                         <audio ref={audioRef} src={audioUrl || ''} className="hidden"></audio>
