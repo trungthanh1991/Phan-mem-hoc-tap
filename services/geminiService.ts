@@ -1,4 +1,5 @@
 
+
 import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
 import { QUIZ_LENGTH } from '../constants';
 import { Question, ReadingAnalysis, WritingAnalysis } from '../types';
@@ -6,9 +7,9 @@ import { Question, ReadingAnalysis, WritingAnalysis } from '../types';
 // Nâng cấp: Hỗ trợ nhiều API key để dự phòng và xoay vòng.
 // Ứng dụng sẽ tìm các key trong biến môi trường: API_KEY, API_KEY_2, API_KEY_3.
 const API_KEYS = [
-   import.meta.env.VITE_API_KEY,
-  import.meta.env.VITE_API_KEY_2,
-  import.meta.env.VITE_API_KEY_3
+   process.env.API_KEY,
+  process.env.API_KEY_2,
+  process.env.API_KEY_3
 ].filter((key): key is string => typeof key === "string" && !!key.trim());
 
 if (API_KEYS.length > 0) {
@@ -19,7 +20,7 @@ if (API_KEYS.length > 0) {
 
 let currentApiKeyIndex = 0;
 
-const getAiClient = () => {
+export const getAiClient = () => {
     if (API_KEYS.length === 0) {
         const errorMessage = "Lỗi: Không có khóa API Gemini nào được cấu hình. Vui lòng thêm ít nhất một khóa vào biến môi trường.";
         console.error(errorMessage);

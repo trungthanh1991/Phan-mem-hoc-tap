@@ -1,5 +1,4 @@
-
-import React, { createContext, useState, useEffect, useContext, ReactNode, useCallback } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useCallback, useRef } from 'react';
 
 interface SpeechContextType {
   speak: (text: string) => void;
@@ -13,95 +12,68 @@ const SpeechContext = createContext<SpeechContextType | undefined>(undefined);
 export const SpeechProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [speakingText, setSpeakingText] = useState<string | null>(null);
-
-  useEffect(() => {
-    // Kích hoạt việc tải danh sách giọng nói
-    const initialVoiceLoad = () => {
-      window.speechSynthesis.getVoices();
-    };
-    
-    window.speechSynthesis.addEventListener('voiceschanged', initialVoiceLoad);
-    initialVoiceLoad();
-
-    // Dọn dẹp khi component unmount
-    return () => {
-      window.speechSynthesis.removeEventListener('voiceschanged', initialVoiceLoad);
-      if (window.speechSynthesis) {
-        window.speechSynthesis.cancel();
-      }
-    };
-  }, []);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const cancel = useCallback(() => {
-    if (window.speechSynthesis) {
-        window.speechSynthesis.cancel();
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = ''; // Ngăn tải thêm
+      audioRef.current = null;
     }
     setIsSpeaking(false);
     setSpeakingText(null);
   }, []);
 
-  const speak = useCallback((text: string) => {
-    if (!window.speechSynthesis) {
-      console.warn("Trình duyệt không hỗ trợ Text-to-Speech.");
-      return;
-    }
+  const speak = useCallback(async (text: string) => {
+    if (!text) return;
 
+    // Nếu đang đọc cùng một văn bản thì bấm lần nữa để dừng
     if (isSpeaking && speakingText === text) {
       cancel();
       return;
     }
 
-    // Luôn dừng việc đọc hiện tại trước khi bắt đầu đọc mới
-    if (window.speechSynthesis.speaking) {
-      window.speechSynthesis.cancel();
+    // Nếu đang đọc văn bản khác, hủy nó trước khi bắt đầu cái mới
+    if (isSpeaking) {
+      cancel();
     }
-
-    const utterance = new SpeechSynthesisUtterance(text);
-
-    // FIX: Lấy danh sách giọng nói trực tiếp tại thời điểm gọi hàm `speak`.
-    // Điều này giải quyết vấn đề race condition khi danh sách giọng nói chưa được tải xong
-    // lúc component render lần đầu.
-    const allVoices = window.speechSynthesis.getVoices();
     
-    // Logic chọn giọng nói với độ ưu tiên
-    const googleVietnameseFemaleVoice = allVoices.find(v => 
-        v.lang.startsWith('vi') && 
-        v.name.toLowerCase().includes('google') &&
-        (v.name.includes('Nữ') || v.name.toLowerCase().includes('female'))
-    );
-    const googleVietnameseVoice = allVoices.find(v => 
-        v.lang.startsWith('vi') && 
-        v.name.toLowerCase().includes('google')
-    );
-    const vietnameseFemaleVoice = allVoices.find(v => 
-        v.lang.startsWith('vi') && 
-        (v.name.includes('Nữ') || v.name.toLowerCase().includes('female'))
-    );
-    // Mở rộng tìm kiếm cho tất cả các giọng 'vi' để tương thích tốt hơn
-    const vietnameseVoice = allVoices.find(v => v.lang.startsWith('vi'));
+    setIsSpeaking(true);
+    setSpeakingText(text);
 
-    utterance.voice = googleVietnameseFemaleVoice || googleVietnameseVoice || vietnameseFemaleVoice || vietnameseVoice || null;
-    utterance.lang = 'vi-VN';
-    utterance.rate = 0.9;
-    utterance.pitch = 1;
+    try {
+      const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=vi&client=tw-ob`;
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      
+      const onEnd = () => {
+          if (audioRef.current === audio) {
+              cancel();
+          }
+          // Dọn dẹp listener
+          audio.removeEventListener('ended', onEnd);
+          audio.removeEventListener('error', onError);
+      };
 
-    utterance.onstart = () => {
-      setIsSpeaking(true);
-      setSpeakingText(text);
-    };
+      const onError = (e: ErrorEvent) => {
+          console.error("Lỗi khi lấy hoặc phát âm thanh TTS:", e);
+          if (audioRef.current === audio) {
+              cancel();
+          }
+           // Dọn dẹp listener
+          audio.removeEventListener('ended', onEnd);
+          audio.removeEventListener('error', onError);
+      };
 
-    utterance.onend = () => {
-      setIsSpeaking(false);
-      setSpeakingText(null);
-    };
-    
-    utterance.onerror = (e) => {
-        console.error("Lỗi phát âm thanh:", e);
-        setIsSpeaking(false);
-        setSpeakingText(null);
+      audio.addEventListener('ended', onEnd);
+      audio.addEventListener('error', onError);
+      
+      await audio.play();
+
+    } catch (error) {
+      console.error("Lỗi khi khởi tạo phát âm thanh TTS:", error);
+      cancel(); // Đặt lại trạng thái nếu có lỗi
     }
-
-    window.speechSynthesis.speak(utterance);
   }, [cancel, isSpeaking, speakingText]);
 
   const value = { speak, cancel, isSpeaking, speakingText };
