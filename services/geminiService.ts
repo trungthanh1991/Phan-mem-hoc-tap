@@ -3,26 +3,33 @@ import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
 import { QUIZ_LENGTH } from '../constants';
 import { Question, ReadingAnalysis, WritingAnalysis } from '../types';
 
+// Nâng cấp: Hỗ trợ nhiều API key để dự phòng và xoay vòng.
+// Ứng dụng sẽ tìm các key trong biến môi trường: API_KEY, API_KEY_2, API_KEY_3.
 const API_KEYS = [
- import.meta.env.VITE_API_KEY,
+   import.meta.env.VITE_API_KEY,
   import.meta.env.VITE_API_KEY_2,
   import.meta.env.VITE_API_KEY_3
-].filter((key) => typeof key === "string" && !!key.trim());
+].filter((key): key is string => typeof key === "string" && !!key.trim());
 
-if (API_KEYS.length === 0) {
-    console.error("Lỗi: Không có khóa API Gemini nào được cấu hình. Vui lòng thiết lập các biến môi trường API_KEY.");
+if (API_KEYS.length > 0) {
+    console.log(`✅ Đã tải thành công ${API_KEYS.length} khóa API Gemini.`);
 } else {
-    console.log("✅ Đã tải thành công các khóa API Gemini:", API_KEYS.length);
+    console.error("❌ Lỗi: Không tìm thấy khóa API Gemini nào trong các biến môi trường (API_KEY, API_KEY_2, API_KEY_3).");
 }
 
 let currentApiKeyIndex = 0;
 
 const getAiClient = () => {
     if (API_KEYS.length === 0) {
+        const errorMessage = "Lỗi: Không có khóa API Gemini nào được cấu hình. Vui lòng thêm ít nhất một khóa vào biến môi trường.";
+        console.error(errorMessage);
         throw new Error("Chưa cấu hình khóa API cho Gemini.");
     }
+
+    // Lấy API key hiện tại và chuẩn bị cho lần gọi tiếp theo (xoay vòng)
     const apiKey = API_KEYS[currentApiKeyIndex];
     currentApiKeyIndex = (currentApiKeyIndex + 1) % API_KEYS.length;
+    
     return new GoogleGenAI({ apiKey });
 };
 

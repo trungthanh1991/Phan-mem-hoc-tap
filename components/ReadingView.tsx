@@ -10,6 +10,7 @@ import ReadingFeedback from './ReadingFeedback';
 import Spinner from './Spinner';
 import BadgeUnlockCard from './BadgeUnlockCard';
 import { MicrophoneIcon, StopCircleIcon, PlayCircleIcon, ArrowPathIcon } from './icons';
+import SpeechButton from './SpeechButton';
 
 type Status = 'idle' | 'requesting_permission' | 'recording' | 'recorded' | 'analyzing' | 'feedback' | 'error';
 
@@ -191,7 +192,12 @@ const ReadingView: React.FC = () => {
 
             <Card className="bg-white p-6 md:p-8 text-left mb-6">
                 {status !== 'feedback' ? (
-                    <p className="text-2xl leading-relaxed text-secondary-dark">{question.passage}</p>
+                    <div className="relative">
+                        <div className="absolute top-0 right-0">
+                            <SpeechButton textToSpeak={question.passage} />
+                        </div>
+                        <p className="text-2xl leading-relaxed text-secondary-dark pr-10">{question.passage}</p>
+                    </div>
                 ) : (
                     analysisResult && <ReadingFeedback passage={question.passage} analysis={analysisResult} />
                 )}

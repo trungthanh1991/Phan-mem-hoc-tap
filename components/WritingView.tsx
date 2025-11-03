@@ -6,6 +6,7 @@ import Card from './Card';
 import Button from './Button';
 import { XCircleIcon, UndoIcon } from './icons';
 import WritingFeedback from './WritingFeedback';
+import SpeechButton from './SpeechButton';
 
 type Status = 'idle' | 'writing' | 'analyzing' | 'feedback' | 'error';
 
@@ -215,7 +216,10 @@ const WritingView: React.FC = () => {
 
             {status !== 'feedback' && (
                 <Card className="bg-white p-6 md:p-8 text-center mb-6">
-                    <p className="text-2xl leading-relaxed text-secondary-dark font-semibold">{question.passage}</p>
+                    <div className="flex justify-center items-start gap-4">
+                        <p className="text-2xl leading-relaxed text-secondary-dark font-semibold">{question.passage}</p>
+                        <SpeechButton textToSpeak={question.passage} />
+                    </div>
                 </Card>
             )}
 

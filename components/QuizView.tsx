@@ -7,6 +7,7 @@ import MultipleChoice from './questions/MultipleChoice';
 import FillInTheBlank from './questions/FillInTheBlank';
 import RearrangeWords from './questions/RearrangeWords';
 import Timer from './Timer';
+import SpeechButton from './SpeechButton';
 
 const QuizView: React.FC = () => {
   const { questions, handleQuizComplete, selectedSubject, passage, selectedTopic, gameState, timeLimit, handleBackToTopicSelection, handleBackToExamOptions } = useGame();
@@ -129,7 +130,10 @@ const QuizView: React.FC = () => {
           <Card className="mb-6 bg-white/80 backdrop-blur-sm mt-8">
             <div className="flex items-start gap-2">
               <div className="flex-grow">
-                <h3 className="text-xl font-bold text-primary-dark mb-2">Đoạn văn</h3>
+                 <div className="flex justify-between items-start mb-2">
+                    <h3 className="text-xl font-bold text-primary-dark">Đoạn văn</h3>
+                    <SpeechButton textToSpeak={passage} />
+                </div>
                 <p className="text-lg text-secondary-dark leading-relaxed">{passage}</p>
               </div>
             </div>
