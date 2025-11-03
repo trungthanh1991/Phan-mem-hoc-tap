@@ -4,7 +4,7 @@ import { Question, ReadingAnalysis, WritingAnalysis } from '../types';
 
 export const generateQuiz = async (subjectName: string, topicName: string): Promise<{ passage: string | null; questions: Question[] }> => {
     try {
-        const apiKey = import.meta.env.VITE_API_KEY;
+        const apiKey =   import.meta.env.VITE_API_KEY;
         if (!apiKey) {
             throw new Error("Chưa cấu hình khóa API cho Gemini. Vui lòng đảm bảo biến môi trường API_KEY đã được thiết lập.");
         }
@@ -276,7 +276,7 @@ export const analyzeReading = async (passage: string, audioBase64: string, mimeT
         };
 
         const response: GenerateContentResponse = await ai.models.generateContent({
-            model: 'gemini-2.5-pro',
+            model: 'gemini-2.5-flash',
             contents: { parts: [{ text: prompt }, audioPart] },
             config: {
                 responseMimeType: "application/json",
@@ -345,7 +345,7 @@ export const analyzeHandwriting = async (passage: string, imageBase64: string): 
         };
 
         const response: GenerateContentResponse = await ai.models.generateContent({
-            model: 'gemini-2.5-pro',
+            model: 'gemini-2.5-flash',
             contents: { parts: [{ text: prompt }, imagePart] },
             config: {
                 responseMimeType: "application/json",
