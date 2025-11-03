@@ -4,8 +4,11 @@ import { Question, ReadingAnalysis, WritingAnalysis } from '../types';
 
 export const generateQuiz = async (subjectName: string, topicName: string): Promise<{ passage: string | null; questions: Question[] }> => {
     try {
-        const apiKey =   import.meta.env.VITE_API_KEY;
-        if (!apiKey) {
+        const apiKey =   [
+            import.meta.env.VITE_API_KEY,
+  import.meta.env.VITE_API_KEY_2,
+  import.meta.env.VITE_API_KEY_3
+        ]if (!apiKey) {
             throw new Error("Chưa cấu hình khóa API cho Gemini. Vui lòng đảm bảo biến môi trường API_KEY đã được thiết lập.");
         }
         const ai = new GoogleGenAI({ apiKey });
