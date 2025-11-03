@@ -118,7 +118,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setError(null);
         setExamDuration(duration);
         try {
-            const { timeLimitInSeconds, questions: examQuestions } = await generateExam(selectedSubject.name, duration, user.stats);
+            const { timeLimitInSeconds, questions: examQuestions } = await generateExam(selectedSubject.name, duration);
             setQuestions(examQuestions);
             setTimeLimit(timeLimitInSeconds);
             setPassage(null);
@@ -131,7 +131,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             }
             setGameState('topic_selection');
         }
-    }, [selectedSubject, user.stats]);
+    }, [selectedSubject]);
 
 
     const handleQuizComplete = (finalScore: number) => {

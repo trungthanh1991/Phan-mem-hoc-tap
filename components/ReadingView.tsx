@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { useUser } from '../contexts/UserContext';
@@ -37,6 +36,7 @@ const ReadingView: React.FC = () => {
     const [analysisResult, setAnalysisResult] = useState<ReadingAnalysis | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [newlyEarnedBadge, setNewlyEarnedBadge] = useState<Badge | null>(null);
+    const [isPlaying, setIsPlaying] = useState(false);
 
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const audioRef = useRef<HTMLAudioElement>(null);
@@ -51,12 +51,33 @@ const ReadingView: React.FC = () => {
         mediaRecorderRef.current = null;
         setAudioBlob(null);
         setAudioUrl(null);
+        setIsPlaying(false);
     }, [audioUrl]);
 
     // Effect để cleanup khi component unmount
     useEffect(() => {
         return cleanup;
     }, [cleanup]);
+
+    // Effect để quản lý trạng thái phát của audio
+    useEffect(() => {
+        const audioEl = audioRef.current;
+        if (audioEl) {
+            const handleEnded = () => setIsPlaying(false);
+            const handlePlay = () => setIsPlaying(true);
+            const handlePause = () => setIsPlaying(false);
+
+            audioEl.addEventListener('ended', handleEnded);
+            audioEl.addEventListener('play', handlePlay);
+            audioEl.addEventListener('pause', handlePause);
+
+            return () => {
+                audioEl.removeEventListener('ended', handleEnded);
+                audioEl.removeEventListener('play', handlePlay);
+                audioEl.removeEventListener('pause', handlePause);
+            };
+        }
+    }, [audioUrl]);
 
     const handleStartRecording = async () => {
         cleanup(); // Dọn dẹp các bản ghi cũ trước khi bắt đầu
@@ -105,6 +126,17 @@ const ReadingView: React.FC = () => {
     const handleStopRecording = () => {
         if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
             mediaRecorderRef.current.stop();
+        }
+    };
+
+    const handleTogglePlayback = () => {
+        const audioEl = audioRef.current;
+        if (!audioEl) return;
+        if (isPlaying) {
+            audioEl.pause();
+            audioEl.currentTime = 0; // Reset về đầu để thành nút "stop"
+        } else {
+            audioEl.play();
         }
     };
 
@@ -197,13 +229,22 @@ const ReadingView: React.FC = () => {
                         </Button>
                         <div className="flex items-center gap-4">
                             <button 
-                                onClick={() => audioRef.current?.play()} 
+                                onClick={handleTogglePlayback} 
                                 className="flex items-center gap-2 py-2 px-4 bg-secondary-light text-secondary-dark font-semibold rounded-full transform hover:scale-105 transition-transform disabled:opacity-50 disabled:cursor-not-allowed" 
-                                aria-label="Nghe lại"
+                                aria-label={isPlaying ? "Dừng nghe" : "Nghe lại"}
                                 disabled={isAnalyzing}
                             >
-                               <PlayCircleIcon className="h-6 w-6"/>
-                               <span>Nghe lại</span>
+                               {isPlaying ? (
+                                    <>
+                                        <StopCircleIcon className="h-6 w-6"/>
+                                        <span>Dừng nghe</span>
+                                    </>
+                               ) : (
+                                    <>
+                                        <PlayCircleIcon className="h-6 w-6"/>
+                                        <span>Nghe lại</span>
+                                    </>
+                               )}
                             </button>
                             <button 
                                 onClick={handleTryAgain} 

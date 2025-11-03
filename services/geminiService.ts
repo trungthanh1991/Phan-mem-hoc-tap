@@ -1,7 +1,8 @@
+
 // FIX: Import GenerateContentResponse to correctly type API responses.
 import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
 import { QUIZ_LENGTH } from '../constants';
-import { Question, ReadingAnalysis, QuizStats } from '../types';
+import { Question, ReadingAnalysis } from '../types';
 
 // Lấy tất cả các khóa API từ biến môi trường và lọc ra những khóa hợp lệ.
 // Trong môi trường này, các biến "Secrets" được truy cập qua process.env
@@ -190,7 +191,7 @@ export const generateQuiz = async (subjectName: string, topicName: string): Prom
     }
 };
 
-export const generateExam = async (subjectName: string, durationPreference: 'short' | 'medium' | 'long', userStats: QuizStats): Promise<{ timeLimitInSeconds: number; questions: Question[] }> => {
+export const generateExam = async (subjectName: string, durationPreference: 'short' | 'medium' | 'long'): Promise<{ timeLimitInSeconds: number; questions: Question[] }> => {
     try {
         const questionCountMapping = {
             short: 10,
@@ -209,8 +210,7 @@ export const generateExam = async (subjectName: string, durationPreference: 'sho
             3. Quyết định một thời gian làm bài hợp lý (tính bằng giây) cho bài thi ${numberOfQuestions} câu hỏi này.
 
             Hướng dẫn thêm:
-            - Đây là lịch sử học tập của học sinh: ${JSON.stringify(userStats)}. Hãy phân tích dữ liệu này để cá nhân hóa bài thi. Những chủ đề có tỷ lệ chính xác thấp hơn nên được ưu tiên trong các câu hỏi.
-            - Tạo ra một bộ câu hỏi đa dạng (trắc nghiệm, điền vào chỗ trống, sắp xếp từ).
+            - Tạo ra một bộ câu hỏi đa dạng (trắc nghiệm, điền vào chỗ trống, sắp xếp từ), phân bổ đều qua các chủ đề của môn học.
             - Toàn bộ nội dung BẮT BUỘC phải là Tiếng Việt.
             - Trả về kết quả dưới dạng một đối tượng JSON duy nhất có hai khóa: "timeLimitInSeconds" (một số nguyên) và "questions" (một mảng chứa CHÍNH XÁC ${numberOfQuestions} đối tượng câu hỏi).
             - Mỗi đối tượng câu hỏi phải có 'type', 'correctAnswer', 'explanation' và các trường cần thiết khác. Lời giải thích phải chỉ ra cách đi đến đáp án đúng một cách logic, không chỉ lặp lại đáp án.

@@ -31,42 +31,24 @@ const QuizView: React.FC = () => {
 
   const currentQuestion = questions[currentQuestionIndex];
 
+  const normalizeAnswer = (input: string | string[]): string => {
+    const str = Array.isArray(input) ? input.join(' ') : String(input);
+    // 1. Chuyển thành chữ thường
+    // 2. Xóa khoảng trắng đầu/cuối
+    // 3. Xóa các dấu câu phổ biến ở cuối (. , ! ?)
+    return str.toLowerCase().trim().replace(/[.,!?;]$/, '');
+  };
+
   const handleSubmitAnswer = () => {
     if (userAnswer === null || userAnswer.length === 0) {
       alert("Bé hãy trả lời câu hỏi nhé!");
       return;
     }
 
-    let correct = false;
-    switch (currentQuestion.type) {
-      case 'REARRANGE_WORDS': {
-        const normalize = (str: string) => str.toLowerCase().replace(/[.,!?;]$/, '').trim();
-        const userAnswerStr = (userAnswer as string[]).join(' ').trim();
-        const correctAnswerStr = currentQuestion.correctAnswer.trim();
-        correct = normalize(userAnswerStr) === normalize(correctAnswerStr);
-        break;
-      }
-      case 'MULTIPLE_CHOICE':
-      case 'FILL_IN_THE_BLANK':
-        const userAnswerStr = (userAnswer as string).trim();
-        const correctAnswerStr = currentQuestion.correctAnswer.trim();
-        
-        // Một kiểm tra mạnh mẽ cho các giá trị số.
-        // Nó xử lý các trường hợp chuỗi là "123" hoặc "123.45" nhưng không phải là "123a"
-        const isUserAnswerNumeric = userAnswerStr !== '' && !isNaN(Number(userAnswerStr));
-        const isCorrectAnswerNumeric = correctAnswerStr !== '' && !isNaN(Number(correctAnswerStr));
+    const normalizedUserAnswer = normalizeAnswer(userAnswer);
+    const normalizedCorrectAnswer = normalizeAnswer(currentQuestion.correctAnswer);
 
-        if (isUserAnswerNumeric && isCorrectAnswerNumeric) {
-            // So sánh dưới dạng số để tránh các vấn đề về dấu phẩy động và sự không nhất quán về kiểu.
-            correct = Number(userAnswerStr) === Number(correctAnswerStr);
-        } else {
-            // Trở lại so sánh chuỗi không phân biệt chữ hoa chữ thường cho các câu trả lời không phải là số.
-            // Đồng thời, loại bỏ các dấu câu phổ biến ở cuối mà AI có thể thêm vào do nhầm lẫn.
-            const normalize = (str: string) => str.toLowerCase().replace(/[.,!?;]$/, '').trim();
-            correct = normalize(userAnswerStr) === normalize(correctAnswerStr);
-        }
-        break;
-    }
+    const correct = normalizedUserAnswer === normalizedCorrectAnswer;
     
     setIsCorrect(correct);
     setIsAnswered(true);
