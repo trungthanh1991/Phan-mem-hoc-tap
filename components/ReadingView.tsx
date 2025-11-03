@@ -141,31 +141,46 @@ const ReadingView: React.FC = () => {
         }
     };
 
-    const handleAnalyze = async () => {
-        if (!audioBlob) return;
-        setStatus('analyzing');
-        setError(null);
-        try {
-            const mimeType = audioBlob.type;
-            const base64Audio = await blobToBase64(audioBlob);
+   const handleAnalyze = async () => {
+    if (!audioBlob) return;
+    setStatus('analyzing');
+    setError(null);
+    try {
+        const mimeType = audioBlob.type;
+        const base64Audio = await blobToBase64(audioBlob);
 
-            const result = await analyzeReadingOnServer({ passage: question.passage, audioBase64: base64Audio, mimeType: mimeType });
-            setAnalysisResult(result);
-            
-            // User context sẽ xử lý việc lưu và trao huy hiệu, sau đó trả về các huy hiệu mới
-            const newlyUnlockedBadges = user.addReadingRecord(question.passage, result);
+        // ✅ GỌI API PHÂN TÍCH TỪ SERVER HOẶC GOOGLE APPS SCRIPT
+        const res = await fetch("https://script.google.com/macros/s/AKfycb_your_deployed_URL_here/exec", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                passage: question.passage,
+                base64Audio: base64Audio,
+                mimeType: mimeType,
+            }),
+        });
 
-            setNewlyEarnedBadges(newlyUnlockedBadges);
-            setStatus('feedback');
-        } catch (err) {
-            if (err instanceof Error) {
-                setError(err.message);
-            } else {
-                setError("Đã xảy ra lỗi không xác định.");
-            }
-            setStatus('error'); // Chuyển sang trạng thái lỗi để hiển thị nút thử lại
+        if (!res.ok) throw new Error("Không thể kết nối tới máy chủ phân tích giọng đọc.");
+        const result = await res.json();
+
+        if (result.error) throw new Error(result.error);
+
+        setAnalysisResult(result);
+
+        // User context sẽ xử lý việc lưu và trao huy hiệu, sau đó trả về các huy hiệu mới
+        const newlyUnlockedBadges = user.addReadingRecord(question.passage, result);
+
+        setNewlyEarnedBadges(newlyUnlockedBadges);
+        setStatus('feedback');
+    } catch (err) {
+        if (err instanceof Error) {
+            setError(err.message);
+        } else {
+            setError("Đã xảy ra lỗi không xác định.");
         }
-    };
+        setStatus('error'); // Chuyển sang trạng thái lỗi để hiển thị nút thử lại
+    }
+};
     
     const handleTryAgain = () => {
         cleanup();
