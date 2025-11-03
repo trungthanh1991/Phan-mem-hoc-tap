@@ -150,7 +150,7 @@ const ReadingView: React.FC = () => {
         const base64Audio = await blobToBase64(audioBlob);
 
         // ✅ GỌI API PHÂN TÍCH TỪ SERVER HOẶC GOOGLE APPS SCRIPT
-        const res = await fetch("https://script.google.com/macros/s/AKfycb_your_deployed_URL_here/exec", {
+        const res = await fetch("https://script.google.com/macros/s/AKfycbyPxYOw_eRQ5QXtw67IeC8GQc38J3XpwpaWRtw5-IA8SUGCmkJkASf7Xs0qG2AqBsZQ/exec", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
