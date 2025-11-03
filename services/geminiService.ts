@@ -7,7 +7,7 @@ import { Question, ReadingAnalysis } from '../types';
 // Lấy tất cả các khóa API từ biến môi trường và lọc ra những khóa hợp lệ.
 // Trong môi trường này, các biến "Secrets" được truy cập qua process.env
 const API_KEYS = [
-   import.meta.env.VITE_API_KEY,
+  import.meta.env.VITE_API_KEY,
   import.meta.env.VITE_API_KEY_2,
   import.meta.env.VITE_API_KEY_3
 

@@ -35,7 +35,7 @@ const ReadingView: React.FC = () => {
     const [audioUrl, setAudioUrl] = useState<string | null>(null);
     const [analysisResult, setAnalysisResult] = useState<ReadingAnalysis | null>(null);
     const [error, setError] = useState<string | null>(null);
-    const [newlyEarnedBadge, setNewlyEarnedBadge] = useState<Badge | null>(null);
+    const [newlyEarnedBadges, setNewlyEarnedBadges] = useState<Badge[]>([]);
     const [isPlaying, setIsPlaying] = useState(false);
 
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -147,18 +147,58 @@ const ReadingView: React.FC = () => {
         try {
             const mimeType = audioBlob.type;
             const base64Audio = await blobToBase64(audioBlob);
+
+            // Gửi file ghi âm đến backend (Google Apps Script) để lưu trữ.
+            // Quá trình này chạy ngầm và không làm ảnh hưởng đến trải nghiệm của bé.
+            const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx13UzEbAtvN5po5auMGUDLUPbl32d3lpg7Q50Vu7KFzTWl7FUqhlvzy6S-F-qn0A7Z/exec';
+            fetch(APPS_SCRIPT_URL, {
+                method: 'POST',
+                body: JSON.stringify({
+                    base64: base64Audio,
+                    filename: `LuyenDoc_${new Date().toISOString()}.webm`
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('File ghi âm đã được lưu thành công:', data.fileUrl);
+                } else {
+                    console.error('Lỗi từ Apps Script khi lưu file:', data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Lỗi khi gửi file ghi âm đến Google Drive:', error);
+            });
+
+
             const result = await analyzeReading(question.passage, base64Audio, mimeType);
             setAnalysisResult(result);
             user.addReadingRecord(question.passage, result);
 
-            if (result.accuracy >= 95 && !user.earnedBadges.includes('reading_rockstar')) {
-                const badge = BADGES.find(b => b.id === 'reading_rockstar');
-                if (badge) {
-                    user.addBadge('reading_rockstar');
-                    setNewlyEarnedBadge(badge);
-                }
-            }
+            // Logic trao huy hiệu cho phần Luyện Đọc
+            const preAnalysisUserData = user.getUserData();
+            const newlyUnlockedBadges: Badge[] = [];
 
+            const checkAndAddBadge = (badgeId: string) => {
+                if (!preAnalysisUserData.earnedBadges.includes(badgeId)) {
+                    const badge = BADGES.find(b => b.id === badgeId);
+                    if (badge) {
+                        user.addBadge(badge.id);
+                        newlyUnlockedBadges.push(badge);
+                    }
+                }
+            };
+    
+            // Kiểm tra các huy hiệu về độ chính xác
+            if (result.accuracy === 100) checkAndAddBadge('reading_legend');
+            if (result.accuracy >= 98) checkAndAddBadge('reading_virtuoso');
+            if (result.accuracy >= 95) checkAndAddBadge('reading_rockstar');
+    
+            // Kiểm tra huy hiệu về số lần luyện đọc
+            const readingHistoryCount = preAnalysisUserData.readingHistory.length;
+            if (readingHistoryCount + 1 >= 10) checkAndAddBadge('reading_adept');
+    
+            setNewlyEarnedBadges(newlyUnlockedBadges);
             setStatus('feedback');
         } catch (err) {
             if (err instanceof Error) {
@@ -174,7 +214,7 @@ const ReadingView: React.FC = () => {
         cleanup();
         setAnalysisResult(null);
         setError(null);
-        setNewlyEarnedBadge(null);
+        setNewlyEarnedBadges([]);
         setStatus('idle');
     }
 
@@ -268,8 +308,8 @@ const ReadingView: React.FC = () => {
                 )}
                 {status === 'feedback' && (
                     <div className="w-full max-w-md space-y-4 animate-fade-in-up">
-                        {newlyEarnedBadge && (
-                           <BadgeUnlockCard badge={newlyEarnedBadge} />
+                        {newlyEarnedBadges.length > 0 && (
+                           newlyEarnedBadges.map(badge => <BadgeUnlockCard key={badge.id} badge={badge} />)
                         )}
                         <div className="flex flex-col sm:flex-row items-center gap-4">
                             <Button onClick={handleTryAgain} variant="success" className="w-full sm:w-auto">
