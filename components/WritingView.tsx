@@ -228,7 +228,7 @@ const WritingView: React.FC = () => {
             )}
             
              {status !== 'feedback' && (
-                 <div className="relative">
+                 <>
                     <canvas
                         ref={canvasRef}
                         onPointerDown={startDrawing}
@@ -238,25 +238,27 @@ const WritingView: React.FC = () => {
                         onPointerCancel={stopDrawing}
                         className="w-full bg-white rounded-lg shadow-inner cursor-crosshair border-2 border-gray-200 touch-none"
                     />
-                     <div className="absolute top-2 right-2 flex gap-2">
+                    <div className="flex justify-end items-center gap-4 mt-4">
                         <button
                             onClick={undo}
-                            className="p-2 bg-gray-200 rounded-full hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex items-center gap-2 py-2 px-4 bg-gray-200 text-secondary-dark font-semibold rounded-full hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             aria-label="Hoàn tác"
                             disabled={isAnalyzing || !canUndo}
                         >
-                            <UndoIcon className="h-6 w-6 text-secondary-dark" />
+                            <UndoIcon className="h-5 w-5" />
+                            <span>Hoàn tác</span>
                         </button>
                         <button
                             onClick={clearCanvas}
-                            className="p-2 bg-gray-200 rounded-full hover:bg-gray-300 transition-colors"
-                            aria-label="Xóa"
+                            className="flex items-center gap-2 py-2 px-4 bg-gray-200 text-secondary-dark font-semibold rounded-full hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            aria-label="Xóa hết"
                             disabled={isAnalyzing || !hasDrawn}
                         >
-                            <XCircleIcon className="h-6 w-6 text-secondary-dark" />
+                            <XCircleIcon className="h-5 w-5" />
+                            <span>Xóa hết</span>
                         </button>
                      </div>
-                </div>
+                </>
              )}
             
             <div className="mt-6 flex flex-col items-center gap-4">
