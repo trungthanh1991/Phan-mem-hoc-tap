@@ -87,7 +87,7 @@ const ReadingView: React.FC = () => {
         
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            const options = { mimeType: 'audio/webm;codecs=opus' };
+            const options = { mimeType: 'audio/webm' }; // Sử dụng MIME type chuẩn hơn
             const mediaRecorder = new MediaRecorder(stream, options);
             mediaRecorderRef.current = mediaRecorder;
             const audioChunks: Blob[] = [];

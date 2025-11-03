@@ -7,7 +7,7 @@ import { Question, ReadingAnalysis, WritingAnalysis } from '../types';
 // Nâng cấp: Hỗ trợ nhiều API key để dự phòng và xoay vòng.
 // Ứng dụng sẽ tìm các key trong biến môi trường: API_KEY, API_KEY_2, API_KEY_3.
 const API_KEYS = [
-  import.meta.env.VITE_API_KEY,
+   import.meta.env.VITE_API_KEY,
   import.meta.env.VITE_API_KEY_2,
   import.meta.env.VITE_API_KEY_3
 ].filter((key): key is string => typeof key === "string" && !!key.trim());
