@@ -93,6 +93,7 @@ export interface WritingAnalysis {
   legibilityScore: number; // Điểm dễ đọc
   neatnessScore: number; // Điểm ngay ngắn
   correctnessScore: number; // Điểm đúng chuẩn
+  completenessScore: number; // Điểm đầy đủ
   positiveFeedback: string; // Lời khen
   constructiveSuggestion: string; // Góp ý
 }

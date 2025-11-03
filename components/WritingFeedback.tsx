@@ -49,13 +49,14 @@ const ScoreIndicator: React.FC<{ score: number; label: string; color: string }> 
 };
 
 const WritingFeedback: React.FC<Props> = ({ passage, analysis, handwritingImage }) => {
-    const { legibilityScore, neatnessScore, correctnessScore, positiveFeedback, constructiveSuggestion } = analysis;
+    const { legibilityScore, neatnessScore, correctnessScore, completenessScore, positiveFeedback, constructiveSuggestion } = analysis;
 
     return (
         <div className="space-y-6 w-full animate-fade-in-up">
             <Card className="bg-white">
                 <h3 className="text-xl font-bold text-primary-dark mb-4 text-center">AI nhận xét bài viết của bé</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <ScoreIndicator score={completenessScore} label="Đầy đủ" color="text-secondary-dark" />
                     <ScoreIndicator score={legibilityScore} label="Dễ đọc" color="text-success" />
                     <ScoreIndicator score={neatnessScore} label="Ngay ngắn" color="text-primary" />
                     <ScoreIndicator score={correctnessScore} label="Đúng chuẩn" color="text-warning" />

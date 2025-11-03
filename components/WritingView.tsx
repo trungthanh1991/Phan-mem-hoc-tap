@@ -4,7 +4,7 @@ import { WritePassageQuestion, WritingAnalysis } from '../types';
 import { analyzeHandwriting } from '../services/geminiService';
 import Card from './Card';
 import Button from './Button';
-import { XCircleIcon } from './icons';
+import { XCircleIcon, UndoIcon } from './icons';
 import WritingFeedback from './WritingFeedback';
 
 type Status = 'idle' | 'writing' | 'analyzing' | 'feedback' | 'error';
@@ -18,8 +18,10 @@ const useCanvas = (
     gridStep = 20
 ) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const historyRef = useRef<ImageData[]>([]);
     const [isDrawing, setIsDrawing] = useState(false);
     const [hasDrawn, setHasDrawn] = useState(false);
+    const [canUndo, setCanUndo] = useState(false);
 
     const drawGrid = useCallback((ctx: CanvasRenderingContext2D) => {
         ctx.strokeStyle = gridColor;
@@ -53,6 +55,8 @@ const useCanvas = (
             }
         }
         setHasDrawn(false);
+        historyRef.current = [];
+        setCanUndo(false);
     }, [clearColor, drawGrid]);
     
     useEffect(() => {
@@ -82,10 +86,18 @@ const useCanvas = (
     };
 
     const startDrawing = (e: React.MouseEvent | React.TouchEvent) => {
+        if (e.type === 'touchstart') {
+            e.preventDefault();
+        }
+        const canvas = canvasRef.current;
+        if (!canvas) return;
         const coords = getCoords(e.nativeEvent);
         if (coords) {
-            const ctx = canvasRef.current?.getContext('2d');
+            const ctx = canvas.getContext('2d');
             if (ctx) {
+                historyRef.current.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+                setCanUndo(true);
+
                 ctx.beginPath();
                 ctx.moveTo(coords.x, coords.y);
                 setIsDrawing(true);
@@ -95,6 +107,9 @@ const useCanvas = (
     };
 
     const draw = (e: React.MouseEvent | React.TouchEvent) => {
+        if (e.type === 'touchmove') {
+            e.preventDefault();
+        }
         if (!isDrawing) return;
         const coords = getCoords(e.nativeEvent);
         if (coords) {
@@ -114,8 +129,24 @@ const useCanvas = (
         setIsDrawing(false);
     };
 
-    // FIX: Return drawing functions so they can be used by the component.
-    return { canvasRef, clearCanvas, hasDrawn, startDrawing, draw, stopDrawing };
+    const undo = useCallback(() => {
+        if (historyRef.current.length > 0) {
+            const canvas = canvasRef.current;
+            const ctx = canvas?.getContext('2d');
+            if (ctx) {
+                const lastState = historyRef.current.pop();
+                if (lastState) {
+                    ctx.putImageData(lastState, 0, 0);
+                }
+            }
+        }
+        if (historyRef.current.length === 0) {
+            setCanUndo(false);
+            setHasDrawn(false);
+        }
+    }, []);
+
+    return { canvasRef, clearCanvas, hasDrawn, startDrawing, draw, stopDrawing, undo, canUndo };
 };
 
 const WritingView: React.FC = () => {
@@ -126,8 +157,7 @@ const WritingView: React.FC = () => {
     const [analysisResult, setAnalysisResult] = useState<WritingAnalysis | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [handwritingImage, setHandwritingImage] = useState<string>('');
-    // FIX: Destructure the drawing functions from the useCanvas hook.
-    const { canvasRef, clearCanvas, hasDrawn, startDrawing, draw, stopDrawing } = useCanvas();
+    const { canvasRef, clearCanvas, hasDrawn, startDrawing, draw, stopDrawing, undo, canUndo } = useCanvas();
 
     if (!question || question.type !== 'WRITE_PASSAGE') {
         return <p>Đang tải đoạn văn...</p>;
@@ -204,14 +234,24 @@ const WritingView: React.FC = () => {
                         onTouchEnd={stopDrawing}
                         className="w-full bg-white rounded-lg shadow-inner cursor-crosshair border-2 border-gray-200"
                     />
-                     <button
-                        onClick={clearCanvas}
-                        className="absolute top-2 right-2 p-2 bg-gray-200 rounded-full hover:bg-gray-300 transition-colors"
-                        aria-label="Xóa"
-                        disabled={isAnalyzing || !hasDrawn}
-                    >
-                        <XCircleIcon className="h-6 w-6 text-secondary-dark" />
-                    </button>
+                     <div className="absolute top-2 right-2 flex gap-2">
+                        <button
+                            onClick={undo}
+                            className="p-2 bg-gray-200 rounded-full hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            aria-label="Hoàn tác"
+                            disabled={isAnalyzing || !canUndo}
+                        >
+                            <UndoIcon className="h-6 w-6 text-secondary-dark" />
+                        </button>
+                        <button
+                            onClick={clearCanvas}
+                            className="p-2 bg-gray-200 rounded-full hover:bg-gray-300 transition-colors"
+                            aria-label="Xóa"
+                            disabled={isAnalyzing || !hasDrawn}
+                        >
+                            <XCircleIcon className="h-6 w-6 text-secondary-dark" />
+                        </button>
+                     </div>
                 </div>
              )}
             

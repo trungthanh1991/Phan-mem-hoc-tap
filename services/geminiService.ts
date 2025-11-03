@@ -53,7 +53,7 @@ export const generateQuiz = async (subjectName: string, topicName: string): Prom
 
         if (topicName === 'Luyện đọc' || topicName === 'Luyện viết') {
              const activityType = topicName === 'Luyện đọc' ? 'READ_ALOUD' : 'WRITE_PASSAGE';
-             const passageLength = topicName === 'Luyện đọc' ? '30-50' : '20';
+             const passageLength = topicName === 'Luyện đọc' ? '30-50' : '10';
 
              prompt = `
                 Bạn là một giáo viên tiểu học vui tính. Hãy tạo ra MỘT câu hỏi dạng ${activityType} cho học sinh lớp 3 (8 tuổi).
@@ -335,18 +335,21 @@ export const analyzeHandwriting = async (passage: string, imageBase64: string): 
         };
 
         const prompt = `
-            Bạn là một giáo viên tiểu học kinh nghiệm, chuyên chấm bài tập viết cho học sinh lớp 3 (8 tuổi). 
+            Bạn là một giáo viên tiểu học kinh nghiệm, chuyên chấm bài tập viết cho học sinh lớp 3 (8 tuổi).
             Nhiệm vụ của bạn là phân tích hình ảnh chữ viết tay của một học sinh so với văn bản gốc.
-            
+
             VĂN BẢN GỐC: "${passage}"
 
-            Phân tích hình ảnh chữ viết tay được cung cấp. KHÔNG chỉ đơn thuần là nhận dạng ký tự (OCR). 
-            Hãy đánh giá dựa trên các tiêu chí sau và cho điểm trên thang 100:
-            1.  **Độ dễ đọc (legibilityScore):** Chữ viết có rõ ràng, dễ nhận biết không?
-            2.  **Độ ngay ngắn (neatnessScore):** Các con chữ có gọn gàng, thẳng hàng, đúng dòng kẻ không?
-            3.  **Độ đúng chuẩn (correctnessScore):** Nét chữ có đúng chuẩn (chiều cao, độ rộng), dấu câu, dấu thanh có đặt đúng vị trí không?
-            4.  **Lời khen (positiveFeedback):** Viết MỘT câu khen ngợi ngắn gọn, cụ thể và chân thành về điểm tốt nhất trong bài viết của bé (khoảng 10-15 từ).
-            5.  **Góp ý (constructiveSuggestion):** Đưa ra MỘT lời khuyên nhẹ nhàng, cụ thể để bé có thể cải thiện ở lần viết sau (khoảng 10-15 từ).
+            Phân tích hình ảnh chữ viết tay được cung cấp. Hãy thực hiện các bước sau:
+            1.  **Nhận dạng ký tự (OCR):** Đọc và chuyển đổi chữ viết tay trong ảnh thành văn bản.
+            2.  **Kiểm tra độ đầy đủ:** So sánh văn bản nhận dạng được với VĂN BẢN GỐC để xem bé đã viết đủ tất cả các chữ chưa. Cho điểm **completenessScore** (thang 100) dựa trên tỷ lệ phần trăm số chữ viết đúng và đủ so với câu gốc.
+            3.  **Đánh giá chất lượng chữ viết:** Đánh giá dựa trên các tiêu chí sau và cho điểm trên thang 100:
+                *   **Độ dễ đọc (legibilityScore):** Chữ viết có rõ ràng, dễ nhận biết không?
+                *   **Độ ngay ngắn (neatnessScore):** Các con chữ có gọn gàng, thẳng hàng, đúng dòng kẻ không?
+                *   **Độ đúng chuẩn (correctnessScore):** Nét chữ có đúng chuẩn (chiều cao, độ rộng), dấu câu, dấu thanh có đặt đúng vị trí không?
+            4.  **Đưa ra nhận xét:**
+                *   **Lời khen (positiveFeedback):** Viết MỘT câu khen ngợi ngắn gọn, cụ thể và chân thành về điểm tốt nhất trong bài viết của bé (khoảng 10-15 từ).
+                *   **Góp ý (constructiveSuggestion):** Đưa ra MỘT lời khuyên nhẹ nhàng, cụ thể để bé có thể cải thiện ở lần viết sau (khoảng 10-15 từ). Nếu bé viết thiếu chữ, hãy nhẹ nhàng nhắc nhở trong phần này.
 
             Yêu cầu:
             - Lời lẽ phải tích cực, động viên, phù hợp với tâm lý trẻ nhỏ.
@@ -359,10 +362,11 @@ export const analyzeHandwriting = async (passage: string, imageBase64: string): 
                 legibilityScore: { type: Type.NUMBER },
                 neatnessScore: { type: Type.NUMBER },
                 correctnessScore: { type: Type.NUMBER },
+                completenessScore: { type: Type.NUMBER },
                 positiveFeedback: { type: Type.STRING },
                 constructiveSuggestion: { type: Type.STRING },
             },
-            required: ["legibilityScore", "neatnessScore", "correctnessScore", "positiveFeedback", "constructiveSuggestion"]
+            required: ["legibilityScore", "neatnessScore", "correctnessScore", "completenessScore", "positiveFeedback", "constructiveSuggestion"]
         };
 
         const response: GenerateContentResponse = await callGeminiWithRetry(ai => 
