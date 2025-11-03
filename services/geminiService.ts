@@ -4,6 +4,10 @@ import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
 import { QUIZ_LENGTH } from '../constants';
 import { Question, ReadingAnalysis, WritingAnalysis } from '../types';
 
+// **LƯU Ý QUAN TRỌNG:** File này giờ đây hoạt động như một module phía "server".
+// Toàn bộ các hàm trong file này chỉ nên được gọi từ các API route (trong thư mục /api)
+// và không bao giờ được gọi trực tiếp từ các component React phía client.
+
 // Nâng cấp: Hỗ trợ nhiều API key để dự phòng và xoay vòng.
 // Ứng dụng sẽ tìm các key trong biến môi trường: API_KEY, API_KEY_2, API_KEY_3.
 const API_KEYS = [

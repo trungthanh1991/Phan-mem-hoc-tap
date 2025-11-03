@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { WritePassageQuestion, WritingAnalysis } from '../types';
-import { analyzeHandwriting } from '../services/geminiService';
+import { POST as analyzeHandwritingOnServer } from '../api/analyze-writing';
 import Card from './Card';
 import Button from './Button';
 import { XCircleIcon, UndoIcon } from './icons';
@@ -181,7 +181,7 @@ const WritingView: React.FC = () => {
             setHandwritingImage(image);
             const base64Image = image.split(',')[1];
             
-            const result = await analyzeHandwriting(question.passage, base64Image);
+            const result = await analyzeHandwritingOnServer({ passage: question.passage, imageBase64: base64Image });
             setAnalysisResult(result);
             setStatus('feedback');
 

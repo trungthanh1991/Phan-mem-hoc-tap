@@ -3,7 +3,8 @@
 import React, { createContext, useState, useCallback, useContext, ReactNode } from 'react';
 // FIX: Import 'QuizStats' type to resolve 'Cannot find name' errors.
 import { GameState, Question, Subject, Topic, Badge, QuizStats, TopicStats } from '../types';
-import { generateQuiz, generateExam } from '../services/geminiService';
+import { POST as generateQuizOnServer } from '../api/generate-quiz';
+import { POST as generateExamOnServer } from '../api/generate-exam';
 import { useUser } from './UserContext';
 import { BADGES, QUIZ_LENGTH, TOPICS } from '../constants';
 
@@ -87,7 +88,10 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setGameState('loading_quiz');
         resetQuizState();
         try {
-            const { passage: generatedPassage, questions: quizQuestions } = await generateQuiz(selectedSubject.name, topic.name);
+            const { passage: generatedPassage, questions: quizQuestions } = await generateQuizOnServer({
+                subjectName: selectedSubject.name,
+                topicName: topic.name
+            });
             setQuestions(quizQuestions);
             setPassage(generatedPassage);
 
@@ -120,7 +124,10 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setError(null);
         setExamDuration(duration);
         try {
-            const { timeLimitInSeconds, questions: examQuestions } = await generateExam(selectedSubject.name, duration);
+            const { timeLimitInSeconds, questions: examQuestions } = await generateExamOnServer({
+                subjectName: selectedSubject.name,
+                durationPreference: duration
+            });
             setQuestions(examQuestions);
             setTimeLimit(timeLimitInSeconds);
             setPassage(null);

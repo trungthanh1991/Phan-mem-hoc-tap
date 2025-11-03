@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { useUser } from '../contexts/UserContext';
 import { ReadAloudQuestion, ReadingAnalysis, Badge } from '../types';
-import { analyzeReading } from '../services/geminiService';
+import { POST as analyzeReadingOnServer } from '../api/analyze-reading';
 import { BADGES } from '../constants';
 import Card from './Card';
 import Button from './Button';
@@ -149,7 +149,7 @@ const ReadingView: React.FC = () => {
             const mimeType = audioBlob.type;
             const base64Audio = await blobToBase64(audioBlob);
 
-            const result = await analyzeReading(question.passage, base64Audio, mimeType);
+            const result = await analyzeReadingOnServer({ passage: question.passage, audioBase64: base64Audio, mimeType: mimeType });
             setAnalysisResult(result);
             
             // User context sẽ xử lý việc lưu và trao huy hiệu, sau đó trả về các huy hiệu mới
