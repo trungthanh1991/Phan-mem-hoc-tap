@@ -1,14 +1,15 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { WritePassageQuestion, WritingAnalysis } from '../types';
-import { POST as analyzeHandwritingOnServer } from '../api/analyze-writing';
 import Card from './Card';
 import Button from './Button';
 import { XCircleIcon, UndoIcon } from './icons';
-import WritingFeedback from './WritingFeedback';
 import SpeechButton from './SpeechButton';
+import Spinner from './Spinner';
+import { POST as analyzeHandwritingApi } from '../api/analyze-writing';
+import WritingFeedback from './WritingFeedback';
 
-type Status = 'idle' | 'writing' | 'analyzing' | 'feedback' | 'error';
+type Status = 'idle' | 'writing' | 'uploading' | 'uploaded' | 'error';
 
 // Custom hook để quản lý logic vẽ trên canvas, được tối ưu hóa cho di động
 const useCanvas = (
@@ -157,39 +158,49 @@ const useCanvas = (
 };
 
 const WritingView: React.FC = () => {
-    const { questions, handleBackToTopicSelection, handleRestart } = useGame();
+    const { questions, handleBackToTopicSelection, handleRestart, handleBackToSubjects } = useGame();
     const question = questions[0] as WritePassageQuestion;
 
     const [status, setStatus] = useState<Status>('idle');
-    const [analysisResult, setAnalysisResult] = useState<WritingAnalysis | null>(null);
     const [error, setError] = useState<string | null>(null);
-    const [handwritingImage, setHandwritingImage] = useState<string>('');
     const { canvasRef, clearCanvas, hasDrawn, startDrawing, draw, stopDrawing, undo, canUndo } = useCanvas();
+    const [analysis, setAnalysis] = useState<WritingAnalysis | null>(null);
+    const [handwritingImage, setHandwritingImage] = useState<string | null>(null);
 
     if (!question || question.type !== 'WRITE_PASSAGE') {
         return <p>Đang tải đoạn văn...</p>;
     }
 
-    const handleAnalyze = async () => {
+    const handleUpload = async () => {
         if (!canvasRef.current || !hasDrawn) return;
-
-        setStatus('analyzing');
+        setStatus('uploading'); // 'uploading' is now the "analyzing" state
         setError(null);
-        
-        try {
-            const image = canvasRef.current.toDataURL('image/png');
-            setHandwritingImage(image);
-            const base64Image = image.split(',')[1];
-            
-            const result = await analyzeHandwritingOnServer({ passage: question.passage, imageBase64: base64Image });
-            setAnalysisResult(result);
-            setStatus('feedback');
+        setAnalysis(null);
 
+        const canvas = canvasRef.current;
+        const fullImageDataUrl = canvas.toDataURL('image/png');
+        setHandwritingImage(fullImageDataUrl);
+
+        const imageBase64 = fullImageDataUrl.split(',')[1];
+        if (!imageBase64) {
+            setError("Không thể tạo hình ảnh từ bài viết của bé. Vui lòng thử lại.");
+            setStatus('error');
+            return;
+        }
+
+        try {
+            const result = await analyzeHandwritingApi({
+                passage: question.passage,
+                imageBase64: imageBase64,
+            });
+            setAnalysis(result);
+            setStatus('uploaded'); // 'uploaded' is now the "feedback ready" state
         } catch (err) {
-             if (err instanceof Error) {
+            console.error("Lỗi khi phân tích bài viết:", err);
+            if (err instanceof Error) {
                 setError(err.message);
             } else {
-                setError("Đã xảy ra lỗi không xác định.");
+                setError("Đã xảy ra lỗi không xác định khi phân tích bài viết.");
             }
             setStatus('error');
         }
@@ -197,13 +208,11 @@ const WritingView: React.FC = () => {
     
     const handleTryAgain = () => {
         setStatus('idle');
-        setAnalysisResult(null);
         setError(null);
-        setHandwritingImage('');
+        setAnalysis(null);
+        setHandwritingImage(null);
         clearCanvas();
     }
-    
-    const isAnalyzing = status === 'analyzing';
 
     return (
         <div className="w-full max-w-3xl mx-auto p-4 md:p-6 text-center relative">
@@ -212,84 +221,88 @@ const WritingView: React.FC = () => {
             </div>
             
             <h1 className="text-3xl md:text-4xl font-bold text-primary-dark mb-2 mt-8 md:mt-0">Luyện Viết</h1>
-            <p className="text-lg text-secondary mb-8">Bé hãy viết lại thật đẹp đoạn văn dưới đây vào khung nhé!</p>
-
-            {status !== 'feedback' && (
-                <Card className="bg-white p-6 md:p-8 text-center mb-6">
-                    <div className="flex justify-center items-start gap-4">
-                        <p className="text-2xl leading-relaxed text-secondary-dark font-semibold">{question.passage}</p>
-                        <SpeechButton textToSpeak={question.passage} />
-                    </div>
-                </Card>
-            )}
-
-            {status === 'feedback' && analysisResult && (
-                <WritingFeedback 
-                    passage={question.passage} 
-                    analysis={analysisResult}
-                    handwritingImage={handwritingImage}
-                />
-            )}
             
-             {status !== 'feedback' && (
-                 <>
+            {(status === 'idle' || status === 'writing') && (
+                 <p className="text-lg text-secondary mb-8">Bé hãy viết lại thật đẹp đoạn văn dưới đây vào khung nhé!</p>
+            )}
+
+            {(status === 'idle' || status === 'writing') && (
+                <>
+                    <Card className="bg-white p-6 md:p-8 text-center mb-6">
+                        <div className="flex justify-center items-start gap-4">
+                            <p className="text-2xl leading-relaxed text-secondary-dark font-semibold">{question.passage}</p>
+                            <SpeechButton textToSpeak={question.passage} />
+                        </div>
+                    </Card>
                     <canvas
                         ref={canvasRef}
-                        onPointerDown={startDrawing}
+                        onPointerDown={(e) => { setStatus('writing'); startDrawing(e); }}
                         onPointerMove={draw}
                         onPointerUp={stopDrawing}
                         onPointerLeave={stopDrawing}
                         onPointerCancel={stopDrawing}
                         className="w-full bg-white rounded-lg shadow-inner cursor-crosshair border-2 border-gray-200 touch-none"
                     />
-                    <div className="flex justify-end items-center gap-4 mt-4">
-                        <button
-                            onClick={undo}
-                            className="flex items-center gap-2 py-2 px-4 bg-gray-200 text-secondary-dark font-semibold rounded-full hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            aria-label="Hoàn tác"
-                            disabled={isAnalyzing || !canUndo}
-                        >
-                            <UndoIcon className="h-5 w-5" />
-                            <span>Hoàn tác</span>
-                        </button>
-                        <button
-                            onClick={clearCanvas}
-                            className="flex items-center gap-2 py-2 px-4 bg-gray-200 text-secondary-dark font-semibold rounded-full hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            aria-label="Xóa hết"
-                            disabled={isAnalyzing || !hasDrawn}
-                        >
-                            <XCircleIcon className="h-5 w-5" />
-                            <span>Xóa hết</span>
-                        </button>
+                    <div className="flex justify-between items-center mt-4">
+                         <div>
+                            <button
+                                onClick={undo}
+                                className="flex items-center gap-2 py-2 px-4 bg-gray-200 text-secondary-dark font-semibold rounded-full hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                aria-label="Hoàn tác"
+                                disabled={!canUndo}
+                            >
+                                <UndoIcon className="h-5 w-5" />
+                                <span>Hoàn tác</span>
+                            </button>
+                            <button
+                                onClick={clearCanvas}
+                                className="ml-2 flex items-center gap-2 py-2 px-4 bg-gray-200 text-secondary-dark font-semibold rounded-full hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                aria-label="Xóa hết"
+                                disabled={!hasDrawn}
+                            >
+                                <XCircleIcon className="h-5 w-5" />
+                                <span>Xóa hết</span>
+                            </button>
+                         </div>
+                        <Button onClick={handleUpload} variant="primary" disabled={!hasDrawn}>
+                            Nộp bài
+                        </Button>
                      </div>
                 </>
-             )}
+            )}
             
-            <div className="mt-6 flex flex-col items-center gap-4">
-                {status === 'idle' && (
-                    <Button onClick={handleAnalyze} variant="primary" disabled={!hasDrawn}>
-                        Gửi đi phân tích
-                    </Button>
-                )}
-                {status === 'analyzing' && (
-                    <Button isLoading loadingText="AI đang chấm bài..." variant="primary" disabled>
-                        Gửi đi phân tích
-                    </Button>
-                )}
-                 {status === 'feedback' && (
+            {status === 'uploading' && (
+                <div className="w-full aspect-[2/1] bg-gray-100 rounded-lg flex flex-col items-center justify-center">
+                    <Spinner />
+                    <p className="mt-4 text-secondary-dark font-semibold text-lg">AI đang chấm bài cho bé...</p>
+                    <p className="text-secondary">Việc này có thể mất một chút thời gian.</p>
+                </div>
+            )}
+            
+            {status === 'uploaded' && analysis && handwritingImage && (
+                <div className="w-full space-y-4 animate-fade-in-up">
+                    <WritingFeedback 
+                        passage={question.passage} 
+                        analysis={analysis} 
+                        handwritingImage={handwritingImage}
+                    />
+                    <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-4">
+                        <Button onClick={handleTryAgain} variant="success" className="w-full sm:w-auto">Viết lại</Button>
+                        <Button onClick={handleRestart} variant="primary" className="w-full sm:w-auto">Viết đoạn khác</Button>
+                        <Button onClick={handleBackToSubjects} variant="secondary" className="w-full sm:w-auto">Về trang chủ</Button>
+                    </div>
+                </div>
+            )}
+            
+            {status === 'error' && (
+                <div className="w-full max-w-md mx-auto space-y-4 animate-fade-in-up">
+                    <Card className="bg-danger-light text-danger-dark p-4">{error}</Card>
                     <div className="flex flex-col sm:flex-row items-center gap-4">
-                        <Button onClick={handleTryAgain} variant="success">Luyện viết lại</Button>
-                        <Button onClick={handleRestart} variant="primary">Viết đoạn văn khác</Button>
+                        <Button onClick={handleTryAgain} variant="primary" className="w-full sm:w-auto">Thử lại</Button>
+                        <Button onClick={handleBackToSubjects} variant="secondary" className="w-full sm:w-auto">Về trang chủ</Button>
                     </div>
-                )}
-                 {status === 'error' && (
-                    <div className="w-full max-w-md space-y-4">
-                        <Card className="bg-danger-light text-danger-dark p-4">{error}</Card>
-                        <Button onClick={handleTryAgain} variant="primary">Thử lại</Button>
-                    </div>
-                )}
-            </div>
-
+                </div>
+            )}
         </div>
     );
 };

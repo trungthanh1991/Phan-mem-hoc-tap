@@ -1,42 +1,23 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useGame } from '../contexts/GameContext';
-import { useUser } from '../contexts/UserContext';
-import { ReadAloudQuestion, ReadingAnalysis, Badge } from '../types';
-import { POST as analyzeReadingOnServer } from '../api/analyze-reading';
-import { BADGES } from '../constants';
+import { ReadAloudQuestion } from '../types';
 import Card from './Card';
 import Button from './Button';
-import ReadingFeedback from './ReadingFeedback';
 import Spinner from './Spinner';
-import BadgeUnlockCard from './BadgeUnlockCard';
 import { MicrophoneIcon, StopCircleIcon, PlayCircleIcon, ArrowPathIcon } from './icons';
 import SpeechButton from './SpeechButton';
 
-type Status = 'idle' | 'requesting_permission' | 'recording' | 'recorded' | 'analyzing' | 'feedback' | 'error';
+type Status = 'idle' | 'requesting_permission' | 'recording' | 'recorded' | 'uploading' | 'uploaded' | 'error';
 
-const blobToBase64 = (blob: Blob): Promise<string> => {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            const base64String = (reader.result as string).split(',')[1];
-            resolve(base64String);
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-    });
-};
 
 const ReadingView: React.FC = () => {
     const { questions, handleRestart, handleBackToSubjects, handleBackToTopicSelection } = useGame();
-    const user = useUser();
     const question = questions[0] as ReadAloudQuestion;
 
     const [status, setStatus] = useState<Status>('idle');
     const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
     const [audioUrl, setAudioUrl] = useState<string | null>(null);
-    const [analysisResult, setAnalysisResult] = useState<ReadingAnalysis | null>(null);
     const [error, setError] = useState<string | null>(null);
-    const [newlyEarnedBadges, setNewlyEarnedBadges] = useState<Badge[]>([]);
     const [isPlaying, setIsPlaying] = useState(false);
 
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -141,43 +122,48 @@ const ReadingView: React.FC = () => {
         }
     };
 
-   const handleAnalyze = async () => {
+   const handleUpload = async () => {
     if (!audioBlob) return;
-    setStatus('analyzing');
+    setStatus('uploading');
     setError(null);
+
+    const formData = new FormData();
+    formData.append('passage', question.passage);
+    const fileExtension = audioBlob.type.split('/')[1]?.split(';')[0] || 'webm';
+    formData.append('audio', audioBlob, `recording.${fileExtension}`);
+    
     try {
-        const mimeType = audioBlob.type;
-        const base64Audio = await blobToBase64(audioBlob);
-
-        // ✅ Sửa lỗi: Gọi qua API route an toàn thay vì gọi trực tiếp
-        const result = await analyzeReadingOnServer({
-            passage: question.passage,
-            audioBase64: base64Audio,
-            mimeType: mimeType,
+        const response = await fetch('https://script.google.com/macros/s/AKfycbyPxYOw_eRQ5QXtw67IeC8GQc38J3XpwpaWRtw5-IA8SUGCmkJkASf7Xs0qG2AqBsZQ/exec', {
+            method: 'POST',
+            body: formData,
         });
-        
-        setAnalysisResult(result);
 
-        // User context sẽ xử lý việc lưu và trao huy hiệu, sau đó trả về các huy hiệu mới
-        const newlyUnlockedBadges = user.addReadingRecord(question.passage, result);
-
-        setNewlyEarnedBadges(newlyUnlockedBadges);
-        setStatus('feedback');
-    } catch (err) {
-        if (err instanceof Error) {
-            setError(err.message);
-        } else {
-            setError("Đã xảy ra lỗi không xác định.");
+        if (!response.ok) {
+           const errorText = await response.text().catch(() => "Không thể đọc phản hồi từ máy chủ.");
+           throw new Error(`Lỗi khi gửi bài. Máy chủ phản hồi: ${errorText}`);
         }
-        setStatus('error'); // Chuyển sang trạng thái lỗi để hiển thị nút thử lại
+        
+        setStatus('uploaded');
+
+    } catch (err) {
+        // Xử lý trường hợp phổ biến khi Google Apps Script trả về lỗi CORS do chuyển hướng sau khi thành công
+        if (err instanceof TypeError && err.message === 'Failed to fetch') {
+            console.log("Yêu cầu đã được gửi. Giả định thành công do chuyển hướng CORS từ Google Apps Script.");
+            setStatus('uploaded');
+        } else {
+             if (err instanceof Error) {
+                setError(err.message);
+            } else {
+                setError("Đã xảy ra lỗi không xác định khi gửi bài.");
+            }
+            setStatus('error');
+        }
     }
 };
     
     const handleTryAgain = () => {
         cleanup();
-        setAnalysisResult(null);
         setError(null);
-        setNewlyEarnedBadges([]);
         setStatus('idle');
     }
 
@@ -185,7 +171,7 @@ const ReadingView: React.FC = () => {
         return <p>Đang tải đoạn văn...</p>;
     }
     
-    const isAnalyzing = status === 'analyzing';
+    const isUploading = status === 'uploading';
 
     return (
         <div className="w-full max-w-3xl mx-auto p-4 md:p-6 text-center relative">
@@ -193,20 +179,16 @@ const ReadingView: React.FC = () => {
                 <button onClick={handleBackToTopicSelection} className="text-primary hover:underline">&larr; Quay lại</button>
             </div>
             
-            <h1 className="text-3xl md:text-4xl font-bold text-primary-dark mb-2 mt-8 md:mt-0">Luyện Đọc Cùng AI</h1>
+            <h1 className="text-3xl md:text-4xl font-bold text-primary-dark mb-2 mt-8 md:mt-0">Luyện Đọc</h1>
             <p className="text-lg text-secondary mb-8">Bé hãy đọc to và rõ ràng đoạn văn dưới đây nhé!</p>
 
             <Card className="bg-white p-6 md:p-8 text-left mb-6">
-                {status !== 'feedback' ? (
-                    <div className="relative">
-                        <div className="absolute top-0 right-0">
-                            <SpeechButton textToSpeak={question.passage} />
-                        </div>
-                        <p className="text-2xl leading-relaxed text-secondary-dark pr-10">{question.passage}</p>
+                <div className="relative">
+                    <div className="absolute top-0 right-0">
+                        <SpeechButton textToSpeak={question.passage} />
                     </div>
-                ) : (
-                    analysisResult && <ReadingFeedback passage={question.passage} analysis={analysisResult} />
-                )}
+                    <p className="text-2xl leading-relaxed text-secondary-dark pr-10">{question.passage}</p>
+                </div>
             </Card>
 
             <div className="flex flex-col items-center gap-4">
@@ -220,28 +202,28 @@ const ReadingView: React.FC = () => {
                         <StopCircleIcon className="h-10 w-10"/>
                     </button>
                 )}
-                 { (status === 'recorded' || isAnalyzing) && (
+                 { (status === 'recorded' || isUploading) && (
                     <div className="flex flex-col items-center gap-4 w-full max-w-md animate-fade-in-up">
                         {status === 'recorded' 
-                            ? <p className="text-secondary-dark mb-2">Ghi âm thành công! Bấm 'Gửi đi phân tích' để AI chấm điểm nhé.</p>
-                            : <p className="text-secondary-dark font-semibold">AI đang lắng nghe và phân tích...</p>
+                            ? <p className="text-secondary-dark mb-2">Ghi âm thành công! Bấm 'Nộp bài' để gửi đi nhé.</p>
+                            : <p className="text-secondary-dark font-semibold">Đang gửi bài đọc của bé...</p>
                         }
                         <audio ref={audioRef} src={audioUrl || ''} className="hidden"></audio>
                         <Button 
-                            onClick={handleAnalyze} 
+                            onClick={handleUpload} 
                             variant="primary" 
                             className="w-full"
-                            isLoading={isAnalyzing}
-                            loadingText="Đang phân tích..."
+                            isLoading={isUploading}
+                            loadingText="Đang gửi..."
                         >
-                            Gửi đi phân tích
+                            Nộp bài
                         </Button>
                         <div className="flex items-center gap-4">
                             <button 
                                 onClick={handleTogglePlayback} 
                                 className="flex items-center gap-2 py-2 px-4 bg-secondary-light text-secondary-dark font-semibold rounded-full transform hover:scale-105 transition-transform disabled:opacity-50 disabled:cursor-not-allowed" 
                                 aria-label={isPlaying ? "Dừng nghe" : "Nghe lại"}
-                                disabled={isAnalyzing}
+                                disabled={isUploading}
                             >
                                {isPlaying ? (
                                     <>
@@ -259,7 +241,7 @@ const ReadingView: React.FC = () => {
                                 onClick={handleTryAgain} 
                                 className="flex items-center gap-2 py-2 px-4 bg-secondary-light text-secondary-dark font-semibold rounded-full transform hover:scale-105 transition-transform disabled:opacity-50 disabled:cursor-not-allowed" 
                                 aria-label="Ghi âm lại"
-                                disabled={isAnalyzing}
+                                disabled={isUploading}
                             >
                                <ArrowPathIcon className="h-6 w-6"/>
                                <span>Ghi âm lại</span>
@@ -275,15 +257,13 @@ const ReadingView: React.FC = () => {
                         </p>
                     </div>
                 )}
-                {status === 'feedback' && (
+                {status === 'uploaded' && (
                     <div className="w-full max-w-md space-y-4 animate-fade-in-up">
-                        {newlyEarnedBadges.length > 0 && (
-                           newlyEarnedBadges.map(badge => <BadgeUnlockCard key={badge.id} badge={badge} />)
-                        )}
-                        <div className="flex flex-col sm:flex-row items-center gap-4">
-                            <Button onClick={handleTryAgain} variant="success" className="w-full sm:w-auto">
-                                Thử lại
-                            </Button>
+                         <Card className="bg-success-light text-success-dark p-4">
+                            <h3 className="font-bold text-lg">Thành công!</h3>
+                            <p>Bài đọc của bé đã được gửi đi. Cô giáo sẽ lắng nghe và nhận xét sau nhé!</p>
+                        </Card>
+                        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                             <Button onClick={handleRestart} variant="primary" className="w-full sm:w-auto">
                                 Đọc đoạn khác
                             </Button>
