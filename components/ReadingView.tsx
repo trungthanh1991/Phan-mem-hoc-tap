@@ -121,45 +121,83 @@ const ReadingView: React.FC = () => {
             audioEl.play();
         }
     };
+const handleUpload = async () => {
+  console.log("🟢 Bắt đầu handleUpload...");
 
-   const handleUpload = async () => {
-    if (!audioBlob) return;
-    setStatus('uploading');
-    setError(null);
+  // Kiểm tra xem có file ghi âm chưa
+  if (!audioBlob) {
+    console.error("❌ Không có audioBlob, có thể chưa ghi âm hoặc chưa lưu xong!");
+    alert("Vui lòng ghi âm lại trước khi nộp bài.");
+    return;
+  }
 
+  setStatus('uploading');
+  setError(null);
+
+  try {
+    // 🔹 Tạo file JSON chứa đoạn văn để gửi cùng file ghi âm
+    const jsonBlob = new Blob(
+      [JSON.stringify({ passage: question.passage })],
+      { type: 'application/json' }
+    );
+
+    // 🔹 Chuẩn bị FormData
     const formData = new FormData();
-    formData.append('passage', question.passage);
-    const fileExtension = audioBlob.type.split('/')[1]?.split(';')[0] || 'webm';
-    formData.append('audio', audioBlob, `recording.${fileExtension}`);
-    
+    formData.append('audio', audioBlob, 'recording.webm');
+    formData.append('json', jsonBlob, 'passage.json');
+    formData.append('username', 'hoc_sinh_lop3'); // thêm tên học sinh nếu cần
+
+    console.log("📦 formData đã tạo xong, chuẩn bị gửi tới Google Apps Script...");
+
+    // 🔹 Gửi lên Apps Script
+    const response = await fetch(
+      "https://script.google.com/macros/s/AKfycbyPxYOw_eRQ5QXtw67IeC8GQc38J3XpwpaWRtw5-IA8SUGCmkJkASf7Xs0qG2AqBsZQ/exec",
+      {
+        method: "POST",
+        body: formData,
+      }
+    );
+
+    console.log("🔵 Yêu cầu đã gửi tới Apps Script. Mã phản hồi:", response.status);
+
+    // 🔹 Đọc phản hồi dạng text (để dễ debug CORS)
+    const resultText = await response.text();
+    console.log("📄 Phản hồi dạng text từ Apps Script:", resultText);
+
+    // 🔹 Thử parse JSON nếu có thể
+    let result;
     try {
-        const response = await fetch('https://script.google.com/macros/s/AKfycbyPxYOw_eRQ5QXtw67IeC8GQc38J3XpwpaWRtw5-IA8SUGCmkJkASf7Xs0qG2AqBsZQ/exec', {
-            method: 'POST',
-            body: formData,
-        });
-
-        if (!response.ok) {
-           const errorText = await response.text().catch(() => "Không thể đọc phản hồi từ máy chủ.");
-           throw new Error(`Lỗi khi gửi bài. Máy chủ phản hồi: ${errorText}`);
-        }
-        
-        setStatus('uploaded');
-
-    } catch (err) {
-        // Xử lý trường hợp phổ biến khi Google Apps Script trả về lỗi CORS do chuyển hướng sau khi thành công
-        if (err instanceof TypeError && err.message === 'Failed to fetch') {
-            console.log("Yêu cầu đã được gửi. Giả định thành công do chuyển hướng CORS từ Google Apps Script.");
-            setStatus('uploaded');
-        } else {
-             if (err instanceof Error) {
-                setError(err.message);
-            } else {
-                setError("Đã xảy ra lỗi không xác định khi gửi bài.");
-            }
-            setStatus('error');
-        }
+      result = JSON.parse(resultText);
+      console.log("✅ JSON phân tích thành công:", result);
+    } catch (parseError) {
+      console.warn("⚠️ Phản hồi không phải JSON thuần:", parseError);
+      result = { rawText: resultText };
     }
+
+    // 🔹 Cập nhật trạng thái hiển thị UI
+    if (response.ok && result.success) {
+      console.log("🎉 Gửi thành công lên Apps Script + Gemini!");
+      setStatus("uploaded");
+    } else {
+      console.error("❌ Lỗi từ Apps Script:", result.error || "Phản hồi không hợp lệ");
+      setError(result.error || "Lỗi không xác định khi gửi lên máy chủ.");
+      setStatus("error");
+    }
+
+  } catch (err) {
+    console.error("💥 Lỗi trong quá trình fetch:", err);
+
+    if (err instanceof TypeError && err.message.includes("Failed to fetch")) {
+      console.warn("⚠️ CORS hoặc mạng bị chặn — request có thể vẫn đã được gửi đi!");
+      setStatus("uploaded");
+    } else {
+      setError(err instanceof Error ? err.message : "Đã xảy ra lỗi không xác định khi gửi bài.");
+      setStatus("error");
+    }
+  }
 };
+
+
     
     const handleTryAgain = () => {
         cleanup();

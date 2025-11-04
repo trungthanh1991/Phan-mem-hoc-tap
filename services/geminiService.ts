@@ -10,7 +10,7 @@ import { Question, ReadingAnalysis, WritingAnalysis } from '../types';
 
 // Lấy các khóa API từ biến môi trường và lọc ra những khóa hợp lệ.
 const API_KEYS = [
-  import.meta.env.VITE_API_KEY,
+import.meta.env.VITE_API_KEY,
   import.meta.env.VITE_API_KEY_2,
   import.meta.env.VITE_API_KEY_3
 ].filter((key): key is string => typeof key === "string" && !!key.trim());
