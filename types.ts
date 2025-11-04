@@ -87,6 +87,7 @@ export interface ReadingAnalysis {
   accuracy: number;
   incorrectWords: { expected: string; actual: string; }[];
   unclearWords: string[];
+  missedWords: string[];
   feedback: string;
 }
 

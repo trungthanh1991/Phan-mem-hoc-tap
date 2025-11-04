@@ -8,10 +8,11 @@ interface Props {
 }
 
 const ReadingFeedback: React.FC<Props> = ({ passage, analysis }) => {
-    const { accuracy, incorrectWords, unclearWords, feedback } = analysis;
+    const { accuracy, incorrectWords, unclearWords, missedWords, feedback } = analysis;
 
     const incorrectMap = new Map(incorrectWords.map(item => [item.expected.toLowerCase(), item.actual]));
     const unclearSet = new Set(unclearWords.map(word => word.toLowerCase()));
+    const missedSet = new Set((missedWords || []).map(word => word.toLowerCase()));
 
     const getAccuracyColor = () => {
         if (accuracy >= 80) return 'text-success-dark';
@@ -39,6 +40,16 @@ const ReadingFeedback: React.FC<Props> = ({ passage, analysis }) => {
                         <span className="bg-amber-200 text-amber-800 rounded px-1 py-0.5 decoration-2 underline decoration-amber-500 decoration-wavy">{word}</span>
                         <span className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-max bg-secondary-dark text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity">
                             Từ này đọc chưa rõ
+                        </span>
+                    </span>
+                );
+            }
+            if (missedSet.has(cleanWord)) {
+                return (
+                    <span key={index} className="group relative">
+                        <span className="bg-gray-200 text-gray-600 rounded px-1 py-0.5 line-through decoration-gray-500">{word}</span>
+                        <span className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-max bg-secondary-dark text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            Bé bỏ qua từ này
                         </span>
                     </span>
                 );
@@ -72,6 +83,10 @@ const ReadingFeedback: React.FC<Props> = ({ passage, analysis }) => {
                     <div className="flex items-center gap-2">
                         <span className="h-4 w-4 rounded bg-amber-200 border border-amber-400"></span>
                         <span className="text-sm text-secondary-dark">Đọc chưa rõ</span>
+                    </div>
+                     <div className="flex items-center gap-2">
+                        <span className="h-4 w-4 rounded bg-gray-200 border border-gray-400"></span>
+                        <span className="text-sm text-secondary-dark">Bỏ qua</span>
                     </div>
                 </div>
             </div>

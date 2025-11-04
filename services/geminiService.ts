@@ -10,7 +10,7 @@ import { Question, ReadingAnalysis, WritingAnalysis } from '../types';
 
 // Lấy các khóa API từ biến môi trường và lọc ra những khóa hợp lệ.
 const API_KEYS = [
-import.meta.env.VITE_API_KEY,
+  import.meta.env.VITE_API_KEY,
   import.meta.env.VITE_API_KEY_2,
   import.meta.env.VITE_API_KEY_3
 ].filter((key): key is string => typeof key === "string" && !!key.trim());
@@ -272,8 +272,9 @@ export const analyzeReading = async (passage: string, audioBase64: string, mimeT
             2. So sánh văn bản được chuyển đổi với VĂN BẢN GỐC.
             3. Xác định các từ bị phát âm sai (ví dụ: "con sâu" thành "con xâu").
             4. Xác định các từ bị đọc không rõ ràng, lí nhí hoặc khó nghe.
-            5. Tính toán tỷ lệ phần trăm chính xác dựa trên số từ đọc đúng so với tổng số từ trong văn bản gốc.
-            6. Viết một lời nhận xét ngắn gọn (dưới 20 từ), mang tính xây dựng và động viên cho bé.
+            5. Xác định các từ trong VĂN BẢN GỐC mà bé đã bỏ qua, không đọc.
+            6. Tính toán tỷ lệ phần trăm chính xác dựa trên số từ đọc đúng so với tổng số từ trong văn bản gốc.
+            7. Viết một lời nhận xét ngắn gọn (dưới 20 từ), mang tính xây dựng và động viên cho bé.
 
             QUAN TRỌNG: Trả về kết quả dưới dạng một đối tượng JSON duy nhất. KHÔNG trả về bất kỳ văn bản nào khác ngoài JSON.
         `;
@@ -297,9 +298,13 @@ export const analyzeReading = async (passage: string, audioBase64: string, mimeT
                     type: Type.ARRAY,
                     items: { type: Type.STRING }
                 },
+                missedWords: {
+                    type: Type.ARRAY,
+                    items: { type: Type.STRING }
+                },
                 feedback: { type: Type.STRING }
             },
-            required: ["accuracy", "incorrectWords", "unclearWords", "feedback"]
+            required: ["accuracy", "incorrectWords", "unclearWords", "missedWords", "feedback"]
         };
 
         const response: GenerateContentResponse = await ai.models.generateContent({
