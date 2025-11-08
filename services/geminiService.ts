@@ -8,9 +8,9 @@ import { Question, ReadingAnalysis, WritingAnalysis } from '../types';
 
 // Lấy các khóa API từ biến môi trường và lọc ra những khóa hợp lệ.
 const API_KEYS = [
- process.env.API_KEY,
-  process.env.API_KEY_2,
-  process.env.API_KEY_3
+  import.meta.env.VITE_API_KEY,
+  import.meta.env.VITE_API_KEY_2,
+  import.meta.env.VITE_API_KEY_3
 ].filter((key): key is string => typeof key === "string" && !!key.trim());
 
 // Ghi log số lượng khóa API đã được tải thành công.
