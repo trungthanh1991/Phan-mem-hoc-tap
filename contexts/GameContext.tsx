@@ -1,11 +1,9 @@
-
-
 import React, { createContext, useState, useCallback, useContext, ReactNode } from 'react';
 import { GameState, Question, Subject, Topic, Badge, QuizStats, TopicStats } from '../types';
 import { POST as generateQuizOnServer } from '../api/generate-quiz';
 import { POST as generateExamOnServer } from '../api/generate-exam';
 import { useUser } from './UserContext';
-import { BADGES, QUIZ_LENGTH, TOPICS } from '../constants';
+import { BADGES, QUIZ_LENGTH, TOPICS, SUBJECTS } from '../constants';
 
 interface GameContextType {
     gameState: GameState;
@@ -105,9 +103,12 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setUserAnswers(Array(quizQuestions.length).fill(null));
             setPassage(generatedPassage);
 
-            if (topic.id === 'doc_doan_van') {
+            const readingTopics = ['doc_doan_van', 'doc_doan_van_en', 'nghe_doc', 'nghe_doc_en'];
+            const writingTopics = ['luyen_viet'];
+
+            if (readingTopics.includes(topic.id)) {
                 setGameState('reading_activity');
-            } else if (topic.id === 'luyen_viet') {
+            } else if (writingTopics.includes(topic.id)) {
                 setGameState('writing_activity');
             } else {
                 setGameState('in_quiz');
@@ -269,6 +270,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             if (selectedSubject.id === 'toan_hoc') tryAddBadge('math_whiz');
             if (selectedSubject.id === 'tieng_viet') tryAddBadge('language_lover');
             if (selectedSubject.id === 'tu_nhien_xa_hoi') tryAddBadge('science_sleuth');
+            if (selectedSubject.id === 'tieng_anh') tryAddBadge('english_explorer');
 
             const topicBadgeMap: { [key: string]: string } = {
                 'phep_cong_tru_1000': 'addition_ace', 'phep_nhan_chia_bang_2_10': 'multiplication_master',
@@ -282,11 +284,11 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             if (topicBadgeMap[selectedTopic.id]) tryAddBadge(topicBadgeMap[selectedTopic.id]);
         }
         
-        for (const subject of ['toan_hoc', 'tieng_viet', 'tu_nhien_xa_hoi']) {
-            const subjectTopics = TOPICS[subject].filter(t => t.id !== 'doc_doan_van');
-            const subjectStats = statsAfter.stats[subject] || {};
-            if (subjectTopics.every(t => (subjectStats[t.id]?.perfectScoreCount || 0) > 0)) {
-                tryAddBadge(`${subject}_mastery`);
+        for (const subject of SUBJECTS) {
+            const subjectTopics = TOPICS[subject.id].filter(t => !['doc_doan_van', 'luyen_viet', 'doc_doan_van_en', 'nghe_doc_en', 'nghe_doc'].includes(t.id));
+            const subjectStats = statsAfter.stats[subject.id] || {};
+            if (subjectTopics.every(t => (subjectStats[t.id]?.timesCompleted || 0) > 0)) {
+                tryAddBadge('subject_master');
             }
 
             let totalCorrect = 0, totalQuestions = 0;
@@ -295,25 +297,30 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 totalQuestions += topic.totalQuestions;
             });
             if (totalQuestions > 20 && (totalCorrect / totalQuestions) >= 0.9) {
-                tryAddBadge(`${subject}_prodigy`);
+                tryAddBadge(`${subject.id}_prodigy`);
             }
         }
         
         const subjectsPlayed = Object.keys(statsAfter.stats);
-        if (subjectsPlayed.length === 3) {
+        if (subjectsPlayed.length === SUBJECTS.length) {
              tryAddBadge('curious_mind');
-             const hasPerfectInAll = ['toan_hoc', 'tieng_viet', 'tu_nhien_xa_hoi'].every(subId => 
-                Object.values(statsAfter.stats[subId] || {}).some(t => t.perfectScoreCount > 0)
-             );
-             if (hasPerfectInAll) tryAddBadge('all_rounder');
+        }
+
+        const hasPerfectInAll = SUBJECTS.every(sub => 
+            Object.values(statsAfter.stats[sub.id] || {}).some(t => t.perfectScoreCount > 0)
+        );
+        if (hasPerfectInAll) {
+            tryAddBadge('all_rounder');
         }
 
         if (selectedTopic) {
             const topicStatsAfter = statsAfter.stats[selectedSubject.id]?.[selectedTopic.id];
-            if (topicStatsAfter.timesCompleted >= 5) tryAddBadge('persistent_player_5');
-            if (topicStatsAfter.timesCompleted >= 10) tryAddBadge(`topic_veteran_${selectedTopic.id}`);
-            if (topicStatsAfter.perfectScoreCount >= 5) tryAddBadge(`topic_superstar_${selectedTopic.id}`);
-            if (topicStatsAfter.perfectScoreCount >= 10) tryAddBadge(`topic_legend_${selectedTopic.id}`);
+            if(topicStatsAfter){
+                if (topicStatsAfter.timesCompleted >= 5) tryAddBadge('persistent_player_5');
+                if (topicStatsAfter.timesCompleted >= 10) tryAddBadge(`topic_veteran_${selectedTopic.id}`);
+                if (topicStatsAfter.perfectScoreCount >= 5) tryAddBadge(`topic_superstar_${selectedTopic.id}`);
+                if (topicStatsAfter.perfectScoreCount >= 10) tryAddBadge(`topic_legend_${selectedTopic.id}`);
+            }
         }
         
         const totalBadgesBefore = statsBefore.earnedBadges.length;

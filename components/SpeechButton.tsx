@@ -6,9 +6,10 @@ import { SpeakerWaveIcon, SpeakerQuietIcon } from './icons';
 interface SpeechButtonProps {
     textToSpeak: string;
     className?: string;
+    iconSize?: string;
 }
 
-const SpeechButton: React.FC<SpeechButtonProps> = ({ textToSpeak, className = '' }) => {
+const SpeechButton: React.FC<SpeechButtonProps> = ({ textToSpeak, className = '', iconSize = 'h-6 w-6' }) => {
     const { speak, isSpeaking, speakingText } = useSpeech();
 
     const isCurrentlySpeaking = isSpeaking && speakingText === textToSpeak;
@@ -27,9 +28,9 @@ const SpeechButton: React.FC<SpeechButtonProps> = ({ textToSpeak, className = ''
             aria-label={isCurrentlySpeaking ? "Dừng đọc" : "Đọc to văn bản"}
         >
             {isCurrentlySpeaking ? (
-                <SpeakerQuietIcon className="h-6 w-6 text-primary" />
+                <SpeakerQuietIcon className={`${iconSize} text-primary`} />
             ) : (
-                <SpeakerWaveIcon className="h-6 w-6 text-secondary" />
+                <SpeakerWaveIcon className={`${iconSize} text-secondary`} />
             )}
         </button>
     );

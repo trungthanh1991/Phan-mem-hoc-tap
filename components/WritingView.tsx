@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { WritePassageQuestion, WritingAnalysis } from '../types';
@@ -158,7 +159,7 @@ const useCanvas = (
 };
 
 const WritingView: React.FC = () => {
-    const { questions, handleBackToTopicSelection, handleRestart, handleBackToSubjects } = useGame();
+    const { questions, handleBackToTopicSelection, handleRestart, handleBackToSubjects, selectedTopic } = useGame();
     const question = questions[0] as WritePassageQuestion;
 
     const [status, setStatus] = useState<Status>('idle');
@@ -170,6 +171,8 @@ const WritingView: React.FC = () => {
     if (!question || question.type !== 'WRITE_PASSAGE') {
         return <p>Đang tải đoạn văn...</p>;
     }
+
+    const isListeningMode = selectedTopic?.id === 'nghe_doc_en';
 
     const handleUpload = async () => {
         if (!canvasRef.current || !hasDrawn) return;
@@ -220,18 +223,33 @@ const WritingView: React.FC = () => {
                 <button onClick={handleBackToTopicSelection} className="text-primary hover:underline">&larr; Quay lại</button>
             </div>
             
-            <h1 className="text-3xl md:text-4xl font-bold text-primary-dark mb-2 mt-8 md:mt-0">Luyện Viết</h1>
+            <h1 className="text-3xl md:text-4xl font-bold text-primary-dark mb-2 mt-8 md:mt-0">
+                {isListeningMode ? 'Nghe Đọc' : 'Luyện Viết'}
+            </h1>
             
             {(status === 'idle' || status === 'writing') && (
-                 <p className="text-lg text-secondary mb-8">Bé hãy viết lại thật đẹp đoạn văn dưới đây vào khung nhé!</p>
+                 <p className="text-lg text-secondary mb-8">
+                    {isListeningMode 
+                        ? 'Bé hãy nghe và viết lại thật đúng câu dưới đây vào khung nhé!' 
+                        : 'Bé hãy viết lại thật đẹp đoạn văn dưới đây vào khung nhé!'}
+                 </p>
             )}
 
             {(status === 'idle' || status === 'writing') && (
                 <>
                     <Card className="bg-white p-6 md:p-8 text-center mb-6">
                         <div className="flex justify-center items-start gap-4">
-                            <p className="text-2xl leading-relaxed text-secondary-dark font-semibold">{question.passage}</p>
-                            <SpeechButton textToSpeak={question.passage} />
+                            {isListeningMode ? (
+                                <div className="flex flex-col items-center gap-2 min-h-[56px]">
+                                     <p className="text-lg text-secondary">Bấm vào loa để nghe câu cần viết</p>
+                                     <SpeechButton textToSpeak={question.passage} className="p-4 rounded-full bg-primary-light text-primary" iconSize="h-10 w-10"/>
+                                </div>
+                            ) : (
+                                <>
+                                    <p className="text-2xl leading-relaxed text-secondary-dark font-semibold">{question.passage}</p>
+                                    <SpeechButton textToSpeak={question.passage} />
+                                </>
+                            )}
                         </div>
                     </Card>
                     <canvas
@@ -288,7 +306,9 @@ const WritingView: React.FC = () => {
                     />
                     <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-4">
                         <Button onClick={handleTryAgain} variant="success" className="w-full sm:w-auto">Viết lại</Button>
-                        <Button onClick={handleRestart} variant="primary" className="w-full sm:w-auto">Viết đoạn khác</Button>
+                        <Button onClick={handleRestart} variant="primary" className="w-full sm:w-auto">
+                            {isListeningMode ? 'Nghe câu khác' : 'Viết đoạn khác'}
+                        </Button>
                         <Button onClick={handleBackToSubjects} variant="secondary" className="w-full sm:w-auto">Về trang chủ</Button>
                     </div>
                 </div>

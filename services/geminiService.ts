@@ -1,5 +1,3 @@
-
-
 import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
 import { QUIZ_LENGTH } from '../constants';
 import { Question, ReadingAnalysis, WritingAnalysis } from '../types';
@@ -10,9 +8,9 @@ import { Question, ReadingAnalysis, WritingAnalysis } from '../types';
 
 // Lấy các khóa API từ biến môi trường và lọc ra những khóa hợp lệ.
 const API_KEYS = [
-  import.meta.env.VITE_API_KEY,
-  import.meta.env.VITE_API_KEY_2,
-  import.meta.env.VITE_API_KEY_3
+ process.env.API_KEY,
+  process.env.API_KEY_2,
+  process.env.API_KEY_3
 ].filter((key): key is string => typeof key === "string" && !!key.trim());
 
 // Ghi log số lượng khóa API đã được tải thành công.
@@ -44,36 +42,54 @@ const getAiClient = () => {
 export const generateQuiz = async (subjectName: string, topicName: string): Promise<{ passage: string | null; questions: Question[] }> => {
     try {
         const ai = getAiClient();
+        
+        const isEnglish = subjectName === 'Tiếng Anh';
+        const language = isEnglish ? 'Tiếng Anh' : 'Tiếng Việt';
+        const instructionsForEnglish = isEnglish 
+            ? 'Nội dung câu hỏi, lựa chọn và đáp án phải hoàn toàn bằng Tiếng Anh. Lời giải thích nên bằng Tiếng Việt để giúp bé hiểu rõ.' 
+            : 'Toàn bộ nội dung BẮT BUỘC phải là Tiếng Việt.';
 
         let prompt = '';
         let responseSchema: any;
         let isReadingComprehension = topicName === 'Đọc hiểu đoạn văn ngắn';
 
-        if (topicName === 'Luyện đọc' || topicName === 'Luyện viết') {
-             const activityType = topicName === 'Luyện đọc' ? 'READ_ALOUD' : 'WRITE_PASSAGE';
-             const passageLength = topicName === 'Luyện đọc' ? '30-50' : '10';
-
+        const isReadAloudTopic = ['Luyện đọc', 'Nghe đọc'].includes(topicName);
+        const isWritePassageTopic = topicName === 'Luyện viết';
+        
+        if (isReadAloudTopic || isWritePassageTopic) {
+             const activityType = isReadAloudTopic ? 'READ_ALOUD' : 'WRITE_PASSAGE';
+             const passageLang = isEnglish ? 'Tiếng Anh đơn giản' : 'Tiếng Việt';
+             
+             let passageLength = '30-50'; // Mặc định cho "Luyện đọc" Tiếng Việt
+             if (topicName === 'Nghe đọc') {
+                 passageLength = '5-10'; // Ngắn hơn cho "Nghe đọc" ở cả hai ngôn ngữ
+             } else if (isEnglish && topicName === 'Luyện đọc') {
+                 passageLength = '5-10'; // Ngắn hơn cho "Luyện đọc" Tiếng Anh
+             } else if (topicName === 'Luyện viết') {
+                 passageLength = '10'; // Giữ ngắn cho việc viết
+             }
+ 
              prompt = `
-                Bạn là một giáo viên tiểu học vui tính. Hãy tạo ra MỘT câu hỏi dạng ${activityType} cho học sinh lớp 3 (8 tuổi).
-                - Tạo một đoạn văn Tiếng Việt ngắn (khoảng ${passageLength} chữ), nội dung trong sáng, vui vẻ, phù hợp với trẻ em.
-                - Đoạn văn phải là đáp án đúng ('correctAnswer').
-                - Lời giải thích ('explanation') có thể để trống.
-                - Trả về kết quả dưới dạng một mảng JSON chứa một đối tượng duy nhất.
-                - Đối tượng phải có 'type' là '${activityType}' và 'passage' chứa đoạn văn đã tạo.
-            `;
-            responseSchema = {
-                type: Type.ARRAY,
-                items: {
-                    type: Type.OBJECT,
-                    properties: {
-                        type: { type: Type.STRING, enum: [activityType] },
-                        passage: { type: Type.STRING },
-                        correctAnswer: { type: Type.STRING },
-                        explanation: { type: Type.STRING },
-                    },
-                    required: ["type", "passage", "correctAnswer", "explanation"],
-                },
-            };
+                 Bạn là một giáo viên tiểu học vui tính. Hãy tạo ra MỘT câu hỏi dạng ${activityType} cho học sinh lớp 3 (8 tuổi) đang học ${language}.
+                 - Tạo một đoạn văn ${passageLang} ngắn (khoảng ${passageLength} từ), nội dung trong sáng, vui vẻ, phù hợp với trẻ em.
+                 - Đoạn văn phải là đáp án đúng ('correctAnswer').
+                 - Lời giải thích ('explanation') có thể để trống.
+                 - Trả về kết quả dưới dạng một mảng JSON chứa một đối tượng duy nhất.
+                 - Đối tượng phải có 'type' là '${activityType}' và 'passage' chứa đoạn văn đã tạo.
+             `;
+             responseSchema = {
+                 type: Type.ARRAY,
+                 items: {
+                     type: Type.OBJECT,
+                     properties: {
+                         type: { type: Type.STRING, enum: [activityType] },
+                         passage: { type: Type.STRING },
+                         correctAnswer: { type: Type.STRING },
+                         explanation: { type: Type.STRING },
+                     },
+                     required: ["type", "passage", "correctAnswer", "explanation"],
+                 },
+             };
         } else if (isReadingComprehension) {
              prompt = `
                 Bạn là một giáo viên tiểu học. Hãy tạo một bài tập đọc hiểu cho học sinh lớp 3 (8 tuổi).
@@ -112,6 +128,8 @@ export const generateQuiz = async (subjectName: string, topicName: string): Prom
                 Bạn là một giáo viên tiểu học vui tính chuyên tạo ra các câu hỏi cho học sinh lớp 3 (8 tuổi). 
                 Hãy tạo ra một bài kiểm tra gồm ${QUIZ_LENGTH} câu hỏi về chủ đề "${topicName}" thuộc môn học "${subjectName}".
 
+                ${instructionsForEnglish}
+
                 Bài kiểm tra phải bao gồm sự đa dạng các loại câu hỏi:
                 - 4 câu hỏi trắc nghiệm (MULTIPLE_CHOICE).
                 - 4 câu hỏi điền vào chỗ trống (FILL_IN_THE_BLANK).
@@ -120,12 +138,11 @@ export const generateQuiz = async (subjectName: string, topicName: string): Prom
                 Yêu cầu cho từng loại câu hỏi:
                 1.  **MULTIPLE_CHOICE**: 'question', 'options' (mảng 4 chuỗi), 'correctAnswer'.
                 2.  **FILL_IN_THE_BLANK**: 'questionParts' (mảng 2 chuỗi), 'correctAnswer'.
-                3.  **REARRANGE_WORDS**: 'question', 'words' (mảng từ), 'correctAnswer'. Câu được tạo ra phải là một câu đơn giản, có ý nghĩa, dài từ 5 đến 8 từ. Mảng 'words' chỉ chứa các từ của câu đó và đã được xáo trộn. KHÔNG bao gồm dấu câu (như '.', '?', '!') dưới dạng các từ riêng lẻ trong mảng 'words'. Đáp án đúng 'correctAnswer' phải bao gồm dấu câu ở cuối. ĐẶC BIỆT: Nếu câu là một phép tính toán học (ví dụ: "15 + 5 = 20"), thì các toán tử (+, -, x, :) và dấu bằng (=) PHẢI được coi là các "từ" riêng biệt trong mảng 'words'.
+                3.  **REARRANGE_WORDS**: 'question', 'words' (mảng từ), 'correctAnswer'. Câu được tạo ra phải là một câu đơn giản, có ý nghĩa, dài từ 4 đến 6 từ. Mảng 'words' chỉ chứa các từ của câu đó và đã được xáo trộn. KHÔNG bao gồm dấu câu (như '.', '?', '!') dưới dạng các từ riêng lẻ trong mảng 'words'. Đáp án đúng 'correctAnswer' phải bao gồm dấu câu ở cuối. ĐẶC BIỆT: Nếu câu là một phép tính toán học (ví dụ: "15 + 5 = 20"), thì các toán tử (+, -, x, :) và dấu bằng (=) PHẢI được coi là các "từ" riêng biệt trong mảng 'words'.
 
                 Yêu cầu chung:
                 - Ngôn ngữ đơn giản, phù hợp với trẻ 8 tuổi.
                 - Cung cấp một lời giải thích ('explanation') ngắn gọn, dễ hiểu cho TẤT CẢ các câu hỏi. Lời giải thích phải chỉ ra cách đi đến đáp án đúng một cách logic, không chỉ lặp lại đáp án. Ví dụ, cho câu hỏi "600 - __ = 250", lời giải thích nên là "Để tìm số trừ, ta lấy số bị trừ (600) trừ đi hiệu (250), kết quả là 350."
-                - Toàn bộ nội dung BẮT BUỘC phải là Tiếng Việt.
                 - Trả về kết quả dưới dạng một mảng JSON. Mỗi đối tượng phải có 'type' là một trong ba giá trị: 'MULTIPLE_CHOICE', 'FILL_IN_THE_BLANK', hoặc 'REARRANGE_WORDS'.
             `;
             responseSchema = {
@@ -188,6 +205,11 @@ export const generateExam = async (subjectName: string, durationPreference: 'sho
         };
         const numberOfQuestions = questionCountMapping[durationPreference];
         
+        const isEnglish = subjectName === 'Tiếng Anh';
+        const instructionsForEnglish = isEnglish 
+            ? 'Nội dung câu hỏi, lựa chọn và đáp án phải hoàn toàn bằng Tiếng Anh. Lời giải thích nên bằng Tiếng Việt để giúp bé hiểu rõ.' 
+            : 'Toàn bộ nội dung BẮT BUỘC phải là Tiếng Việt.';
+
         const prompt = `
             Bạn là một AI gia sư thông minh, đang tạo một bài thi thử cho học sinh lớp 3 (8 tuổi).
             Môn học: "${subjectName}".
@@ -198,8 +220,8 @@ export const generateExam = async (subjectName: string, durationPreference: 'sho
             3. Quyết định một thời gian làm bài hợp lý (tính bằng giây) cho bài thi ${numberOfQuestions} câu hỏi này.
 
             Hướng dẫn thêm:
+            - ${instructionsForEnglish}
             - Tạo ra một bộ câu hỏi đa dạng (trắc nghiệm, điền vào chỗ trống, sắp xếp từ), phân bổ đều qua các chủ đề của môn học.
-            - Toàn bộ nội dung BẮT BUỘC phải là Tiếng Việt.
             - Trả về kết quả dưới dạng một đối tượng JSON duy nhất có hai khóa: "timeLimitInSeconds" (một số nguyên) và "questions" (một mảng chứa CHÍNH XÁC ${numberOfQuestions} đối tượng câu hỏi).
             - Mỗi đối tượng câu hỏi phải có 'type', 'correctAnswer', 'explanation' và các trường cần thiết khác. Lời giải thích phải chỉ ra cách đi đến đáp án đúng một cách logic, không chỉ lặp lại đáp án.
         `;

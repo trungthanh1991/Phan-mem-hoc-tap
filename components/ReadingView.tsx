@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { ReadAloudQuestion, ReadingAnalysis, Badge } from '../types';
@@ -34,7 +35,7 @@ const blobToBase64 = (blob: Blob): Promise<string> => {
 };
 
 const ReadingView: React.FC = () => {
-  const { questions, handleRestart, handleBackToSubjects, handleBackToTopicSelection } = useGame();
+  const { questions, handleRestart, handleBackToSubjects, handleBackToTopicSelection, selectedTopic } = useGame();
   const { addReadingRecord } = useUser();
   const question = questions[0] as ReadAloudQuestion;
 
@@ -48,6 +49,9 @@ const ReadingView: React.FC = () => {
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
+  
+  const isListeningMode = selectedTopic?.id === 'nghe_doc' || selectedTopic?.id === 'nghe_doc_en';
+  const isEnglishListeningHideText = selectedTopic?.id === 'nghe_doc_en';
 
   const cleanup = useCallback(() => {
     if (audioUrl) URL.revokeObjectURL(audioUrl);
@@ -193,22 +197,36 @@ const ReadingView: React.FC = () => {
       </div>
 
       <h1 className="text-3xl md:text-4xl font-bold text-primary-dark mb-2 mt-8 md:mt-0">
-        Luyện Đọc
+        {isListeningMode ? 'Nghe Đọc' : 'Luyện Đọc'}
       </h1>
       
       {status !== 'uploaded' && (
-         <p className="text-lg text-secondary mb-8">Bé hãy đọc to và rõ ràng đoạn văn dưới đây nhé!</p>
+         <p className="text-lg text-secondary mb-8">
+            {isListeningMode 
+                ? (isEnglishListeningHideText ? 'Bé hãy bấm nút loa để nghe câu Tiếng Anh, sau đó ghi âm lại thật giống nhé!' : 'Bé hãy bấm nút loa để nghe, sau đó ghi âm lại bài đọc của mình nhé!') 
+                : 'Bé hãy đọc to và rõ ràng đoạn văn dưới đây nhé!'}
+        </p>
       )}
 
       {status !== 'uploaded' && (
-        <Card className="bg-white p-6 md:p-8 text-left mb-6">
-          <div className="relative">
-            <div className="absolute top-0 right-0">
-              <SpeechButton textToSpeak={question.passage} />
-            </div>
-            <p className="text-2xl leading-relaxed text-secondary-dark pr-10">{question.passage}</p>
-          </div>
-        </Card>
+        <>
+            {isEnglishListeningHideText ? (
+                <Card className="bg-white p-6 md:p-8 text-center mb-6 min-h-[148px] flex items-center justify-center">
+                    <div className="flex flex-col items-center justify-center gap-4">
+                        <SpeechButton textToSpeak={question.passage} className="p-4 rounded-full bg-primary-light text-primary" iconSize="h-10 w-10"/>
+                    </div>
+                </Card>
+            ) : (
+                <Card className="bg-white p-6 md:p-8 text-left mb-6">
+                    <div className="relative">
+                        <div className="absolute top-0 right-0">
+                            <SpeechButton textToSpeak={question.passage} />
+                        </div>
+                        <p className="text-2xl leading-relaxed text-secondary-dark pr-10">{question.passage}</p>
+                    </div>
+                </Card>
+            )}
+        </>
       )}
 
       <div className="flex flex-col items-center gap-4">
@@ -289,7 +307,7 @@ const ReadingView: React.FC = () => {
 
             <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-4">
               <Button onClick={handleRestart} variant="primary" className="w-full sm:w-auto">
-                Đọc đoạn khác
+                {isListeningMode ? 'Nghe câu khác' : 'Đọc đoạn khác'}
               </Button>
               <Button onClick={handleBackToSubjects} variant="secondary" className="w-full sm:w-auto">
                 Về trang chủ
