@@ -32,6 +32,7 @@ const QuizView: React.FC<QuizViewProps> = ({ mode }) => {
     }
 
     const currentQuestion = questions[currentQuestionIndex];
+    const lang = selectedSubject?.id === 'tieng_anh' ? 'en-US' : 'vi-VN';
 
     const isCurrentQuestionAnswered = useMemo(() => {
         if (isReviewMode) return true;
@@ -88,7 +89,7 @@ const QuizView: React.FC<QuizViewProps> = ({ mode }) => {
     
     const handlePrevious = () => {
         if (currentQuestionIndex > 0) {
-            setCurrentQuestionIndex(prev => prev - 1);
+            setCurrentQuestionIndex(prev => prev + 1);
         }
     };
 
@@ -148,7 +149,7 @@ const QuizView: React.FC<QuizViewProps> = ({ mode }) => {
                 <Card className="mb-6 bg-white/80 backdrop-blur-sm mt-8">
                     <div className="flex justify-between items-start mb-2">
                         <h3 className="text-xl font-bold text-primary-dark">Đoạn văn</h3>
-                        <SpeechButton textToSpeak={passage} />
+                        <SpeechButton textToSpeak={passage} lang={lang} />
                     </div>
                     <p className="text-lg text-secondary-dark leading-relaxed">{passage}</p>
                 </Card>

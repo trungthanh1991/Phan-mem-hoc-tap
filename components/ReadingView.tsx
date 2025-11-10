@@ -35,7 +35,7 @@ const blobToBase64 = (blob: Blob): Promise<string> => {
 };
 
 const ReadingView: React.FC = () => {
-  const { questions, handleRestart, handleBackToSubjects, handleBackToTopicSelection, selectedTopic } = useGame();
+  const { questions, handleRestart, handleBackToSubjects, handleBackToTopicSelection, selectedTopic, selectedSubject } = useGame();
   const { addReadingRecord } = useUser();
   const question = questions[0] as ReadAloudQuestion;
 
@@ -52,6 +52,7 @@ const ReadingView: React.FC = () => {
   
   const isListeningMode = selectedTopic?.id === 'nghe_doc' || selectedTopic?.id === 'nghe_doc_en';
   const isEnglishListeningHideText = selectedTopic?.id === 'nghe_doc_en';
+  const lang = selectedSubject?.id === 'tieng_anh' ? 'en-US' : 'vi-VN';
 
   const cleanup = useCallback(() => {
     if (audioUrl) URL.revokeObjectURL(audioUrl);
@@ -213,14 +214,14 @@ const ReadingView: React.FC = () => {
             {isEnglishListeningHideText ? (
                 <Card className="bg-white p-6 md:p-8 text-center mb-6 min-h-[148px] flex items-center justify-center">
                     <div className="flex flex-col items-center justify-center gap-4">
-                        <SpeechButton textToSpeak={question.passage} className="p-4 rounded-full bg-primary-light text-primary" iconSize="h-10 w-10"/>
+                        <SpeechButton textToSpeak={question.passage} lang={lang} className="p-4 rounded-full bg-primary-light text-primary" iconSize="h-10 w-10"/>
                     </div>
                 </Card>
             ) : (
                 <Card className="bg-white p-6 md:p-8 text-left mb-6">
                     <div className="relative">
                         <div className="absolute top-0 right-0">
-                            <SpeechButton textToSpeak={question.passage} />
+                            <SpeechButton textToSpeak={question.passage} lang={lang} />
                         </div>
                         <p className="text-2xl leading-relaxed text-secondary-dark pr-10">{question.passage}</p>
                     </div>

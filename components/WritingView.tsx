@@ -159,7 +159,7 @@ const useCanvas = (
 };
 
 const WritingView: React.FC = () => {
-    const { questions, handleBackToTopicSelection, handleRestart, handleBackToSubjects, selectedTopic } = useGame();
+    const { questions, handleBackToTopicSelection, handleRestart, handleBackToSubjects, selectedTopic, selectedSubject } = useGame();
     const question = questions[0] as WritePassageQuestion;
 
     const [status, setStatus] = useState<Status>('idle');
@@ -173,6 +173,7 @@ const WritingView: React.FC = () => {
     }
 
     const isListeningMode = selectedTopic?.id === 'nghe_doc_en';
+    const lang = selectedSubject?.id === 'tieng_anh' ? 'en-US' : 'vi-VN';
 
     const handleUpload = async () => {
         if (!canvasRef.current || !hasDrawn) return;
@@ -242,12 +243,12 @@ const WritingView: React.FC = () => {
                             {isListeningMode ? (
                                 <div className="flex flex-col items-center gap-2 min-h-[56px]">
                                      <p className="text-lg text-secondary">Bấm vào loa để nghe câu cần viết</p>
-                                     <SpeechButton textToSpeak={question.passage} className="p-4 rounded-full bg-primary-light text-primary" iconSize="h-10 w-10"/>
+                                     <SpeechButton textToSpeak={question.passage} lang={lang} className="p-4 rounded-full bg-primary-light text-primary" iconSize="h-10 w-10"/>
                                 </div>
                             ) : (
                                 <>
                                     <p className="text-2xl leading-relaxed text-secondary-dark font-semibold">{question.passage}</p>
-                                    <SpeechButton textToSpeak={question.passage} />
+                                    <SpeechButton textToSpeak={question.passage} lang={lang} />
                                 </>
                             )}
                         </div>

@@ -7,16 +7,17 @@ interface SpeechButtonProps {
     textToSpeak: string;
     className?: string;
     iconSize?: string;
+    lang?: 'vi-VN' | 'en-US';
 }
 
-const SpeechButton: React.FC<SpeechButtonProps> = ({ textToSpeak, className = '', iconSize = 'h-6 w-6' }) => {
+const SpeechButton: React.FC<SpeechButtonProps> = ({ textToSpeak, className = '', iconSize = 'h-6 w-6', lang = 'vi-VN' }) => {
     const { speak, isSpeaking, speakingText } = useSpeech();
 
     const isCurrentlySpeaking = isSpeaking && speakingText === textToSpeak;
 
     const handleClick = (e: React.MouseEvent) => {
         e.stopPropagation(); // Prevent card clicks, etc.
-        speak(textToSpeak);
+        speak(textToSpeak, lang);
     };
 
     const baseClasses = 'p-2 rounded-full hover:bg-secondary-light transition-colors focus:outline-none focus:ring-2 focus:ring-primary';

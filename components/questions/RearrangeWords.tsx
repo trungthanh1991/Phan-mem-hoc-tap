@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { RearrangeWordsQuestion } from '../../types';
 import SpeechButton from '../SpeechButton';
+import { useGame } from '../../contexts/GameContext';
 
 interface Props {
   question: RearrangeWordsQuestion;
@@ -15,6 +16,9 @@ interface Word {
 }
 
 const RearrangeWords: React.FC<Props> = ({ question, userAnswer, setUserAnswer, isAnswered }) => {
+  const { selectedSubject } = useGame();
+  const lang = selectedSubject?.id === 'tieng_anh' ? 'en-US' : 'vi-VN';
+
   const initialWords = useMemo(() => 
     question.words.map((text, index) => ({ id: index, text }))
   , [question.words]);
@@ -35,7 +39,7 @@ const RearrangeWords: React.FC<Props> = ({ question, userAnswer, setUserAnswer, 
       setAnswer([]);
       setWordBank([...initialWords].sort(() => Math.random() - 0.5));
     }
-  }, [question.words, isAnswered]);
+  }, [question.words, isAnswered, userAnswer, initialWords]);
 
   useEffect(() => {
     // Sync parent state only in quiz mode
@@ -66,7 +70,7 @@ const RearrangeWords: React.FC<Props> = ({ question, userAnswer, setUserAnswer, 
     <div>
       <div className="flex items-start gap-2 mb-6">
         <h2 className="text-2xl md:text-3xl font-bold text-secondary-dark flex-grow">{question.question}</h2>
-        <SpeechButton textToSpeak={question.question} />
+        <SpeechButton textToSpeak={question.question} lang={lang} />
       </div>
       
       <div className={`bg-white p-4 rounded-xl border-2 border-dashed min-h-[80px] flex flex-wrap gap-3 items-center justify-center mb-6 transition-colors ${

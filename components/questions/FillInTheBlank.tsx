@@ -2,6 +2,7 @@ import React from 'react';
 import { FillInTheBlankQuestion } from '../../types';
 import SpeechButton from '../SpeechButton';
 import { CheckCircleIcon, XCircleIcon } from '../icons';
+import { useGame } from '../../contexts/GameContext';
 
 interface Props {
   question: FillInTheBlankQuestion;
@@ -11,6 +12,9 @@ interface Props {
 }
 
 const FillInTheBlank: React.FC<Props> = ({ question, userAnswer, setUserAnswer, isAnswered }) => {
+  const { selectedSubject } = useGame();
+  const lang = selectedSubject?.id === 'tieng_anh' ? 'en-US' : 'vi-VN';
+  
   const [part1, part2] = question.questionParts;
   const textToSpeak = `${part1} chỗ trống ${part2}`;
   
@@ -36,7 +40,7 @@ const FillInTheBlank: React.FC<Props> = ({ question, userAnswer, setUserAnswer, 
                 />
                 <span>{part2}</span>
             </div>
-             <SpeechButton textToSpeak={textToSpeak} />
+             <SpeechButton textToSpeak={textToSpeak} lang={lang} />
         </div>
         {isAnswered && !isCorrect && (
             <p className="mt-2 text-lg text-secondary-dark">
