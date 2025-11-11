@@ -62,7 +62,7 @@ export const generateQuiz = async (subjectName: string, topicName: string): Prom
              if (topicName === 'Tập đọc' && isEnglish) {
                 prompt = `
                     Bạn là giáo viên Tiếng Anh cho trẻ em. Hãy tạo MỘT câu hỏi dạng READ_ALOUD cho học sinh lớp 3 (8 tuổi) đang học Tiếng Anh chủ đề "Tập đọc".
-                    - Cung cấp MỘT từ vựng Tiếng Anh ngẫu nhiên, đơn giản, phổ biến, có một âm tiết (ví dụ: "apple", "house", "dog", "sun"). Yếu tố ngẫu nhiên là RẤT QUAN TRỌNG; mỗi lần nhận được yêu cầu này, bạn phải trả về một từ khác nhau.
+                    - Cung cấp MỘT , Hai hoặc Ba từ vựng Tiếng Anh ngẫu nhiên, đơn giản, phổ biến, có một âm tiết (ví dụ: "apple", "house", "dog", "sun"). Yếu tố ngẫu nhiên là RẤT QUAN TRỌNG; mỗi lần nhận được yêu cầu này, bạn phải trả về một từ khác nhau.
                     - Từ này sẽ được đặt trong trường 'passage'.
                     - Cung cấp bản dịch Tiếng Việt chính xác của từ đó trong trường 'translation'.
                     - Từ Tiếng Anh cũng chính là đáp án đúng ('correctAnswer').
