@@ -31,6 +31,7 @@ export interface RearrangeWordsQuestion extends BaseQuestion {
 export interface ReadAloudQuestion extends BaseQuestion {
   type: 'READ_ALOUD';
   passage: string;
+  translation?: string; // Nghĩa Tiếng Việt cho từ Tiếng Anh
 }
 
 export interface WritePassageQuestion extends BaseQuestion {

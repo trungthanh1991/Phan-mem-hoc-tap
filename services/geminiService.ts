@@ -53,43 +53,69 @@ export const generateQuiz = async (subjectName: string, topicName: string): Prom
         let responseSchema: any;
         let isReadingComprehension = topicName === 'Đọc hiểu đoạn văn ngắn';
 
-        const isReadAloudTopic = ['Luyện đọc', 'Nghe đọc'].includes(topicName);
+        const isReadAloudTopic = ['Luyện đọc', 'Nghe đọc', 'Tập đọc'].includes(topicName);
         const isWritePassageTopic = topicName === 'Luyện viết';
         
         if (isReadAloudTopic || isWritePassageTopic) {
              const activityType = isReadAloudTopic ? 'READ_ALOUD' : 'WRITE_PASSAGE';
-             const passageLang = isEnglish ? 'Tiếng Anh đơn giản' : 'Tiếng Việt';
              
-             let passageLength = '30-50'; // Mặc định cho "Luyện đọc" Tiếng Việt
-             if (topicName === 'Nghe đọc') {
-                 passageLength = '5-10'; // Ngắn hơn cho "Nghe đọc" ở cả hai ngôn ngữ
-             } else if (isEnglish && topicName === 'Luyện đọc') {
-                 passageLength = '5-10'; // Ngắn hơn cho "Luyện đọc" Tiếng Anh
-             } else if (topicName === 'Luyện viết') {
-                 passageLength = '10'; // Giữ ngắn cho việc viết
+             if (topicName === 'Tập đọc' && isEnglish) {
+                prompt = `
+                    Bạn là giáo viên Tiếng Anh cho trẻ em. Hãy tạo MỘT câu hỏi dạng READ_ALOUD cho học sinh lớp 3 (8 tuổi) đang học Tiếng Anh chủ đề "Tập đọc".
+                    - Cung cấp MỘT từ vựng Tiếng Anh ngẫu nhiên, đơn giản, phổ biến, có một âm tiết (ví dụ: "apple", "house", "dog", "sun"). Yếu tố ngẫu nhiên là RẤT QUAN TRỌNG; mỗi lần nhận được yêu cầu này, bạn phải trả về một từ khác nhau.
+                    - Từ này sẽ được đặt trong trường 'passage'.
+                    - Cung cấp bản dịch Tiếng Việt chính xác của từ đó trong trường 'translation'.
+                    - Từ Tiếng Anh cũng chính là đáp án đúng ('correctAnswer').
+                    - Lời giải thích ('explanation') có thể để trống.
+                    - Trả về kết quả dưới dạng một mảng JSON chứa một đối tượng duy nhất.
+                `;
+                responseSchema = {
+                    type: Type.ARRAY,
+                    items: {
+                        type: Type.OBJECT,
+                        properties: {
+                            type: { type: Type.STRING, enum: ['READ_ALOUD'] },
+                            passage: { type: Type.STRING },
+                            translation: { type: Type.STRING },
+                            correctAnswer: { type: Type.STRING },
+                            explanation: { type: Type.STRING },
+                        },
+                        required: ["type", "passage", "translation", "correctAnswer", "explanation"],
+                    },
+                };
+             } else {
+                const passageLang = isEnglish ? 'Tiếng Anh đơn giản' : 'Tiếng Việt';
+                let passageLength = '30-50'; // Mặc định cho "Luyện đọc" Tiếng Việt
+                if (topicName === 'Nghe đọc') {
+                    passageLength = '5-10'; // Ngắn hơn cho "Nghe đọc" ở cả hai ngôn ngữ
+                } else if (isEnglish && topicName === 'Luyện đọc') {
+                    passageLength = '5-10'; // Ngắn hơn cho "Luyện đọc" Tiếng Anh
+                } else if (topicName === 'Luyện viết') {
+                    passageLength = '10'; // Giữ ngắn cho việc viết
+                }
+    
+                prompt = `
+                    Bạn là một giáo viên tiểu học vui tính. Hãy tạo ra MỘT câu hỏi dạng ${activityType} cho học sinh lớp 3 (8 tuổi) đang học ${language}.
+                    - Tạo một đoạn văn ${passageLang} ngắn (khoảng ${passageLength} từ), nội dung trong sáng, vui vẻ, phù hợp với trẻ em.
+                    - Đoạn văn phải là đáp án đúng ('correctAnswer').
+                    - Lời giải thích ('explanation') có thể để trống.
+                    - Trả về kết quả dưới dạng một mảng JSON chứa một đối tượng duy nhất.
+                    - Đối tượng phải có 'type' là '${activityType}' và 'passage' chứa đoạn văn đã tạo.
+                `;
+                responseSchema = {
+                    type: Type.ARRAY,
+                    items: {
+                        type: Type.OBJECT,
+                        properties: {
+                            type: { type: Type.STRING, enum: [activityType] },
+                            passage: { type: Type.STRING },
+                            correctAnswer: { type: Type.STRING },
+                            explanation: { type: Type.STRING },
+                        },
+                        required: ["type", "passage", "correctAnswer", "explanation"],
+                    },
+                };
              }
- 
-             prompt = `
-                 Bạn là một giáo viên tiểu học vui tính. Hãy tạo ra MỘT câu hỏi dạng ${activityType} cho học sinh lớp 3 (8 tuổi) đang học ${language}.
-                 - Tạo một đoạn văn ${passageLang} ngắn (khoảng ${passageLength} từ), nội dung trong sáng, vui vẻ, phù hợp với trẻ em.
-                 - Đoạn văn phải là đáp án đúng ('correctAnswer').
-                 - Lời giải thích ('explanation') có thể để trống.
-                 - Trả về kết quả dưới dạng một mảng JSON chứa một đối tượng duy nhất.
-                 - Đối tượng phải có 'type' là '${activityType}' và 'passage' chứa đoạn văn đã tạo.
-             `;
-             responseSchema = {
-                 type: Type.ARRAY,
-                 items: {
-                     type: Type.OBJECT,
-                     properties: {
-                         type: { type: Type.STRING, enum: [activityType] },
-                         passage: { type: Type.STRING },
-                         correctAnswer: { type: Type.STRING },
-                         explanation: { type: Type.STRING },
-                     },
-                     required: ["type", "passage", "correctAnswer", "explanation"],
-                 },
-             };
         } else if (isReadingComprehension) {
              prompt = `
                 Bạn là một giáo viên tiểu học. Hãy tạo một bài tập đọc hiểu cho học sinh lớp 3 (8 tuổi).

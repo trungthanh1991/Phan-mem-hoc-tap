@@ -103,7 +103,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setUserAnswers(Array(quizQuestions.length).fill(null));
             setPassage(generatedPassage);
 
-            const readingTopics = ['doc_doan_van', 'doc_doan_van_en', 'nghe_doc', 'nghe_doc_en'];
+            const readingTopics = ['doc_doan_van', 'doc_doan_van_en', 'nghe_doc', 'nghe_doc_en', 'tap_doc_en'];
             const writingTopics = ['luyen_viet'];
 
             if (readingTopics.includes(topic.id)) {

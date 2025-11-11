@@ -9,7 +9,7 @@ const SubjectSelection: React.FC = () => {
 
     return (
         <div className="text-center relative">
-             <div className="absolute top-0 right-0 -mt-4">
+            <div className="absolute top-0 right-0 -mt-4">
                 <button
                     onClick={showBadgeCollection}
                     className="flex items-center gap-2 bg-white/80 backdrop-blur-sm text-yellow-600 font-semibold py-2 px-4 rounded-full shadow-md hover:shadow-lg hover:bg-white transition-all transform hover:scale-105"
@@ -19,12 +19,27 @@ const SubjectSelection: React.FC = () => {
                     <span>Huy hiệu</span>
                 </button>
             </div>
-            <h1 className="text-4xl md:text-5xl font-bold text-primary-dark mb-2">Sân Chơi Trí Tuệ</h1>
-            <p className="text-xl text-secondary mb-10">Chào mừng bé! Hãy chọn một môn học để bắt đầu nhé!</p>
+
+            <h1 className="text-4xl md:text-5xl font-bold text-primary-dark mb-2">
+                Sân Chơi Trí Tuệ
+            </h1>
+            <p className="text-xl text-secondary mb-10">
+                Chào mừng bé! Hãy chọn một môn học để bắt đầu nhé!
+            </p>
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 {SUBJECTS.map((subject) => {
                     const hasBgImage = !!subject.backgroundImage;
-                    const bgStyle = hasBgImage ? { backgroundImage: `url(${subject.backgroundImage})` } : {};
+
+                    // FIX CHUẨN 100% CHO BACKGROUND
+                    const bgStyle = hasBgImage
+                        ? {
+                              backgroundImage: `url(${subject.backgroundImage})`,
+                              backgroundSize: 'cover',
+                              backgroundPosition: 'center',
+                          }
+                        : {};
+
                     const bgClasses = hasBgImage
                         ? 'bg-cover bg-center'
                         : `bg-gradient-to-br ${subject.gradientFrom || ''} ${subject.gradientTo || ''}`;
@@ -36,7 +51,10 @@ const SubjectSelection: React.FC = () => {
                             className={`relative overflow-hidden flex flex-col items-center justify-center text-center p-8 group hover:shadow-2xl transform hover:-translate-y-2 ${bgClasses} ${subject.textColor}`}
                             style={bgStyle}
                         >
-                            {hasBgImage && <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors duration-300"></div>}
+                            {hasBgImage && (
+                                <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors duration-300"></div>
+                            )}
+
                             <div className="relative z-10 flex flex-col items-center justify-center">
                                 <div className="relative">
                                     <subject.icon className="h-20 w-20 mb-4 transition-transform duration-300 group-hover:scale-110" />
@@ -48,6 +66,7 @@ const SubjectSelection: React.FC = () => {
                     );
                 })}
             </div>
+
             <div className="mt-12 text-center">
                 <button
                     onClick={showParentsCorner}

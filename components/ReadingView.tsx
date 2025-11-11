@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { ReadAloudQuestion, ReadingAnalysis, Badge } from '../types';
@@ -52,6 +51,7 @@ const ReadingView: React.FC = () => {
   
   const isListeningMode = selectedTopic?.id === 'nghe_doc' || selectedTopic?.id === 'nghe_doc_en';
   const isEnglishListeningHideText = selectedTopic?.id === 'nghe_doc_en';
+  const isWordReadingMode = selectedTopic?.id === 'tap_doc_en';
   const lang = selectedSubject?.id === 'tieng_anh' ? 'en-US' : 'vi-VN';
 
   const cleanup = useCallback(() => {
@@ -197,21 +197,49 @@ const ReadingView: React.FC = () => {
         </button>
       </div>
 
-      <h1 className="text-3xl md:text-4xl font-bold text-primary-dark mb-2 mt-8 md:mt-0">
-        {isListeningMode ? 'Nghe Đọc' : 'Luyện Đọc'}
-      </h1>
+      <div className="flex items-center justify-center gap-4 mb-2">
+        <h1 className="text-3xl md:text-4xl font-bold text-primary-dark mt-8 md:mt-0">
+          {isListeningMode ? 'Nghe Đọc' : (isWordReadingMode ? 'Tập Đọc' : 'Luyện Đọc')}
+        </h1>
+        {isWordReadingMode && (
+          <button
+            onClick={handleRestart}
+            className="p-2 rounded-full hover:bg-blue-100 transition-colors disabled:opacity-50 mt-8 md:mt-0"
+            aria-label="Tạo từ mới"
+            title="Tạo từ mới"
+            disabled={status !== 'idle'}
+          >
+            <ArrowPathIcon className="h-8 w-8 text-primary" />
+          </button>
+        )}
+      </div>
       
       {status !== 'uploaded' && (
          <p className="text-lg text-secondary mb-8">
-            {isListeningMode 
-                ? (isEnglishListeningHideText ? 'Bé hãy bấm nút loa để nghe câu Tiếng Anh, sau đó ghi âm lại thật giống nhé!' : 'Bé hãy bấm nút loa để nghe, sau đó ghi âm lại bài đọc của mình nhé!') 
-                : 'Bé hãy đọc to và rõ ràng đoạn văn dưới đây nhé!'}
+            {isWordReadingMode
+                ? 'Bé hãy đọc to và rõ ràng từ Tiếng Anh dưới đây nhé!'
+                : isListeningMode 
+                    ? (isEnglishListeningHideText ? 'Bé hãy bấm nút loa để nghe câu Tiếng Anh, sau đó ghi âm lại thật giống nhé!' : 'Bé hãy bấm nút loa để nghe, sau đó ghi âm lại bài đọc của mình nhé!') 
+                    : 'Bé hãy đọc to và rõ ràng đoạn văn dưới đây nhé!'}
         </p>
       )}
 
       {status !== 'uploaded' && (
         <>
-            {isEnglishListeningHideText ? (
+            {isWordReadingMode ? (
+                 <Card className="bg-white p-6 md:p-8 text-center mb-6 flex flex-col items-center justify-center min-h-[148px]">
+                    <div className="flex items-center justify-center gap-4 mb-2">
+                        <p className="text-6xl font-bold text-primary-dark">{question.passage}</p>
+                        <SpeechButton 
+                            textToSpeak={question.passage} 
+                            lang={lang}
+                            iconSize="h-12 w-12"
+                            className="text-primary"
+                        />
+                    </div>
+                    <p className="text-2xl text-secondary">{question.translation}</p>
+                </Card>
+            ) : isEnglishListeningHideText ? (
                 <Card className="bg-white p-6 md:p-8 text-center mb-6 min-h-[148px] flex items-center justify-center">
                     <div className="flex flex-col items-center justify-center gap-4">
                         <SpeechButton textToSpeak={question.passage} lang={lang} className="p-4 rounded-full bg-primary-light text-primary" iconSize="h-10 w-10"/>
@@ -308,7 +336,7 @@ const ReadingView: React.FC = () => {
 
             <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-4">
               <Button onClick={handleRestart} variant="primary" className="w-full sm:w-auto">
-                {isListeningMode ? 'Nghe câu khác' : 'Đọc đoạn khác'}
+                {isListeningMode ? 'Nghe câu khác' : (isWordReadingMode ? 'Đọc từ khác' : 'Đọc đoạn khác')}
               </Button>
               <Button onClick={handleBackToSubjects} variant="secondary" className="w-full sm:w-auto">
                 Về trang chủ
