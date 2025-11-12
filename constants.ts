@@ -1,5 +1,5 @@
 
-import { Subject, Topic, Badge } from './types';
+import { Subject, Topic, Badge, SubTopic } from './types';
 import { 
     MathIcon, VietnameseIcon, ScienceIcon, TrophyIcon, CheckCircleIcon, MedalIcon, MicrophoneIcon, ClockIcon, StarIcon, BrainIcon, GraduationCapIcon, CrownIcon, TargetIcon, GlobeIcon, ShapesIcon, BookOpenIcon, LeafIcon, PawIcon, RepeatIcon, DocumentCheckIcon, LightbulbIcon, RulerIcon, ScaleIcon, MultiplyIcon, PlusIcon, TrophyStarIcon, DiamondIcon, RocketLaunchIcon, ShieldCheckIcon, PuzzlePieceIcon, FireIcon, BoltIcon, CalendarDaysIcon, SunIcon, MoonIcon, ArrowUpCircleIcon, HeartIcon, PencilIcon, EnglishIcon
 } from './components/icons';
@@ -84,6 +84,34 @@ export const TOPICS: Record<string, Topic[]> = {
     { id: 'nghe_doc_en', name: 'Nghe đọc' },
   ],
 };
+
+export const ENGLISH_READING_SUBTOPICS: SubTopic[] = [
+  { id: 'school_objects', name: 'School Objects — Đồ dùng học tập' },
+  { id: 'classroom_items', name: 'Classroom Items — Vật dụng trong lớp học' },
+  { id: 'household_items', name: 'Household Items — Đồ vật trong gia đình' },
+  { id: 'personal_items', name: 'Personal Items — Đồ dùng cá nhân' },
+  { id: 'toys', name: 'Toys — Đồ chơi' },
+  { id: 'animals', name: 'Animals — Động vật' },
+  { id: 'colors', name: 'Colors — Màu sắc' },
+  { id: 'numbers', name: 'Numbers — Các con số' },
+  { id: 'shapes', name: 'Shapes — Hình dạng' },
+  { id: 'food_drinks', name: 'Food & Drinks — Thức ăn và đồ uống' },
+  { id: 'fruits', name: 'Fruits — Trái cây' },
+  { id: 'vegetables', name: 'Vegetables — Rau củ' },
+  { id: 'clothes', name: 'Clothes — Quần áo' },
+  { id: 'weather', name: 'Weather — Thời tiết' },
+  { id: 'family_members', name: 'Family Members — Các thành viên trong gia đình' },
+  { id: 'body_parts', name: 'Body Parts — Các bộ phận cơ thể' },
+  { id: 'actions_verbs', name: 'Actions (Verbs) — Hành động' },
+  { id: 'places', name: 'Places — Địa điểm' },
+  { id: 'transportation', name: 'Transportation — Phương tiện giao thông' },
+  { id: 'daily_activities', name: 'Daily Activities — Hoạt động hằng ngày' },
+  { id: 'nature', name: 'Nature — Thiên nhiên' },
+  { id: 'festivals_holidays', name: 'Festivals & Holidays — Lễ hội & ngày lễ' },
+  { id: 'opposites', name: 'Opposites — Từ trái nghĩa' },
+  { id: 'adjectives_basic', name: 'Adjectives (Basic) — Tính từ cơ bản' },
+  { id: 'community_helpers', name: 'Community Helpers — Nghề nghiệp' },
+];
 
 export const QUIZ_LENGTH = 10;
 

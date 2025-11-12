@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { RearrangeWordsQuestion } from '../../types';
 import SpeechButton from '../SpeechButton';
 import { useGame } from '../../contexts/GameContext';
@@ -25,24 +25,33 @@ const RearrangeWords: React.FC<Props> = ({ question, userAnswer, setUserAnswer, 
 
   const [answer, setAnswer] = useState<Word[]>([]);
   const [wordBank, setWordBank] = useState<Word[]>([]);
+  const prevQuestionWordsRef = useRef<string[] | null>(null);
 
   useEffect(() => {
-    // Only set initial state when question changes or in review mode
+    const questionHasChanged = JSON.stringify(prevQuestionWordsRef.current) !== JSON.stringify(question.words);
+
     if (isAnswered && userAnswer) {
+      // Chế độ xem lại: Hiển thị câu trả lời đã nộp của người dùng.
       const userAnswerWords: Word[] = userAnswer.map(text => {
           const originalWord = initialWords.find(iw => iw.text === text);
           return { id: originalWord ? originalWord.id : Math.random(), text };
       });
       setAnswer(userAnswerWords);
       setWordBank(initialWords.filter(iw => !userAnswer.includes(iw.text)));
-    } else {
+    } else if (questionHasChanged) {
+      // Chế độ làm bài (câu hỏi mới): Reset trạng thái và xáo trộn các từ.
       setAnswer([]);
       setWordBank([...initialWords].sort(() => Math.random() - 0.5));
+    }
+    
+    // Cập nhật ref nếu câu hỏi đã thay đổi.
+    if (questionHasChanged) {
+        prevQuestionWordsRef.current = question.words;
     }
   }, [question.words, isAnswered, userAnswer, initialWords]);
 
   useEffect(() => {
-    // Sync parent state only in quiz mode
+    // Đồng bộ trạng thái 'answer' cục bộ lên component cha ở chế độ làm bài.
     if (!isAnswered) {
         setUserAnswer(answer.map(w => w.text));
     }
@@ -94,7 +103,7 @@ const RearrangeWords: React.FC<Props> = ({ question, userAnswer, setUserAnswer, 
           <button 
             key={word.id} 
             onClick={() => !isAnswered && handleSelectWord(word)} 
-            className={`px-4 py-2 font-semibold rounded-lg transition-all ${isAnswered ? 'bg-gray-100 text-gray-400' : 'bg-gray-200 text-secondary-dark hover:bg-gray-300 transform hover:scale-105'}`}
+            className={`px-4 py-2 font-semibold rounded-lg transition-colors transition-transform duration-200 ${isAnswered ? 'bg-gray-100 text-gray-400' : 'bg-gray-200 text-secondary-dark hover:bg-gray-300 transform hover:scale-105'}`}
             disabled={isAnswered}
             >
             {word.text}

@@ -39,7 +39,7 @@ const getAiClient = () => {
 };
 
 
-export const generateQuiz = async (subjectName: string, topicName: string): Promise<{ passage: string | null; questions: Question[] }> => {
+export const generateQuiz = async (subjectName: string, topicName: string, subTopicName?: string): Promise<{ passage: string | null; questions: Question[] }> => {
     try {
         const ai = getAiClient();
         
@@ -60,12 +60,17 @@ export const generateQuiz = async (subjectName: string, topicName: string): Prom
              const activityType = isReadAloudTopic ? 'READ_ALOUD' : 'WRITE_PASSAGE';
              
              if (topicName === 'Tập đọc' && isEnglish) {
+                const subTopicPrompt = subTopicName
+                    ? `thuộc chủ đề "${subTopicName}".`
+                    : 'ngẫu nhiên, đơn giản, phổ biến, phù hợp cho trẻ 8 tuổi.';
+                
                 prompt = `
                     Bạn là giáo viên Tiếng Anh cho trẻ em. Hãy tạo MỘT câu hỏi dạng READ_ALOUD cho học sinh lớp 3 (8 tuổi) đang học Tiếng Anh chủ đề "Tập đọc".
-                    - Cung cấp MỘT , Hai hoặc Ba từ vựng Tiếng Anh ngẫu nhiên, đơn giản, phổ biến, có một âm tiết (ví dụ: "apple", "house", "dog", "sun"). Yếu tố ngẫu nhiên là RẤT QUAN TRỌNG; mỗi lần nhận được yêu cầu này, bạn phải trả về một từ khác nhau.
-                    - Từ này sẽ được đặt trong trường 'passage'.
-                    - Cung cấp bản dịch Tiếng Việt chính xác của từ đó trong trường 'translation'.
-                    - Từ Tiếng Anh cũng chính là đáp án đúng ('correctAnswer').
+                    - Cung cấp một từ vựng hoặc cụm từ Tiếng Anh ${subTopicPrompt}
+                    - Từ vựng có thể là một từ đơn (ví dụ: "house", "flower", "happy") hoặc một cụm từ ngắn gồm 2-3 từ (ví dụ: "ice cream", "blue car", "read a book"). Yếu tố ngẫu nhiên là RẤT QUAN TRỌNG; mỗi lần nhận được yêu cầu này, bạn phải trả về một từ hoặc cụm từ khác nhau trong chủ đề đã cho (nếu có).
+                    - Từ/cụm từ này sẽ được đặt trong trường 'passage'.
+                    - Cung cấp bản dịch Tiếng Việt chính xác của từ/cụm từ đó trong trường 'translation'.
+                    - Từ/cụm từ Tiếng Anh cũng chính là đáp án đúng ('correctAnswer').
                     - Lời giải thích ('explanation') có thể để trống.
                     - Trả về kết quả dưới dạng một mảng JSON chứa một đối tượng duy nhất.
                 `;
@@ -168,7 +173,7 @@ export const generateQuiz = async (subjectName: string, topicName: string): Prom
 
                 Yêu cầu chung:
                 - Ngôn ngữ đơn giản, phù hợp với trẻ 8 tuổi.
-                - Cung cấp một lời giải thích ('explanation') ngắn gọn, dễ hiểu cho TẤT CẢ các câu hỏi. Lời giải thích phải chỉ ra cách đi đến đáp án đúng một cách logic, không chỉ lặp lại đáp án. Ví dụ, cho câu hỏi "600 - __ = 250", lời giải thích nên là "Để tìm số trừ, ta lấy số bị trừ (600) trừ đi hiệu (250), kết quả là 350."
+                - Cung cấp một lời giải thích ('explanation') ngắn gọn, dễ hiểu cho TẤT CẢ các câu hỏi. Lời giải thích phải chỉ ra cách đi đến đáp án đúng một cách logic. ĐẶC BIỆT QUAN TRỌNG: Lời giải thích ('explanation') PHẢI nhất quán với đáp án đúng ('correctAnswer'). Nó phải làm rõ tại sao đáp án đó là chính xác và không được chứa thông tin mâu thuẫn. Ví dụ, cho câu hỏi "600 - __ = 250" với đáp án đúng là "350", lời giải thích nên là "Để tìm số trừ, ta lấy số bị trừ (600) trừ đi hiệu (250), kết quả là 350."
                 - Trả về kết quả dưới dạng một mảng JSON. Mỗi đối tượng phải có 'type' là một trong ba giá trị: 'MULTIPLE_CHOICE', 'FILL_IN_THE_BLANK', hoặc 'REARRANGE_WORDS'.
             `;
             responseSchema = {
@@ -249,7 +254,7 @@ export const generateExam = async (subjectName: string, durationPreference: 'sho
             - ${instructionsForEnglish}
             - Tạo ra một bộ câu hỏi đa dạng (trắc nghiệm, điền vào chỗ trống, sắp xếp từ), phân bổ đều qua các chủ đề của môn học.
             - Trả về kết quả dưới dạng một đối tượng JSON duy nhất có hai khóa: "timeLimitInSeconds" (một số nguyên) và "questions" (một mảng chứa CHÍNH XÁC ${numberOfQuestions} đối tượng câu hỏi).
-            - Mỗi đối tượng câu hỏi phải có 'type', 'correctAnswer', 'explanation' và các trường cần thiết khác. Lời giải thích phải chỉ ra cách đi đến đáp án đúng một cách logic, không chỉ lặp lại đáp án.
+            - Mỗi đối tượng câu hỏi phải có 'type', 'correctAnswer', 'explanation' và các trường cần thiết khác. Lời giải thích phải chỉ ra cách đi đến đáp án đúng một cách logic. ĐẶC BIỆT QUAN TRỌNG: Lời giải thích ('explanation') PHẢI nhất quán với đáp án đúng ('correctAnswer'). Nó phải làm rõ tại sao đáp án đó là chính xác và không được chứa thông tin mâu thuẫn.
         `;
 
         const responseSchema = {

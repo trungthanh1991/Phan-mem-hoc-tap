@@ -4,6 +4,7 @@ import { Question } from '../types';
 interface RequestPayload {
     subjectName: string;
     topicName: string;
+    subTopicName?: string;
 }
 
 /**
@@ -13,6 +14,6 @@ interface RequestPayload {
  * @returns Một đối tượng chứa đoạn văn (nếu có) và mảng các câu hỏi.
  */
 export async function POST(payload: RequestPayload): Promise<{ passage: string | null; questions: Question[] }> {
-    const { subjectName, topicName } = payload;
-    return await generateQuiz(subjectName, topicName);
+    const { subjectName, topicName, subTopicName } = payload;
+    return await generateQuiz(subjectName, topicName, subTopicName);
 }

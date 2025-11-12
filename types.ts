@@ -61,6 +61,11 @@ export interface Topic {
   name: string;
 }
 
+export interface SubTopic {
+    id: string;
+    name: string;
+}
+
 export interface Badge {
   id: string;
   name: string;
@@ -82,7 +87,7 @@ export interface QuizStats {
   };
 }
 
-export type GameState = 'subject_selection' | 'topic_selection' | 'loading_quiz' | 'in_quiz' | 'results' | 'badge_collection' | 'parents_corner' | 'reading_activity' | 'exam_options' | 'loading_exam' | 'in_exam' | 'writing_activity' | 'review';
+export type GameState = 'subject_selection' | 'topic_selection' | 'loading_quiz' | 'in_quiz' | 'results' | 'badge_collection' | 'parents_corner' | 'reading_activity' | 'exam_options' | 'loading_exam' | 'in_exam' | 'writing_activity' | 'review' | 'english_reading_subtopic_selection';
 
 export interface ReadingAnalysis {
   accuracy: number;

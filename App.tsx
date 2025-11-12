@@ -11,6 +11,7 @@ import ParentsCornerView from './components/ParentsCornerView';
 import ReadingView from './components/ReadingView';
 import ExamOptionsView from './components/ExamOptionsView';
 import WritingView from './components/WritingView';
+import EnglishReadingSubTopicSelection from './components/EnglishReadingSubTopicSelection';
 
 const App: React.FC = () => {
   const { gameState } = useGame();
@@ -21,6 +22,8 @@ const App: React.FC = () => {
         return <SubjectSelection />;
       case 'topic_selection':
         return <TopicSelection />;
+      case 'english_reading_subtopic_selection':
+        return <EnglishReadingSubTopicSelection />;
       case 'exam_options':
         return <ExamOptionsView />;
       case 'loading_quiz':

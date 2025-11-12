@@ -1,5 +1,5 @@
 import React, { createContext, useState, useCallback, useContext, ReactNode } from 'react';
-import { GameState, Question, Subject, Topic, Badge, QuizStats, TopicStats } from '../types';
+import { GameState, Question, Subject, Topic, Badge, QuizStats, TopicStats, SubTopic } from '../types';
 import { POST as generateQuizOnServer } from '../api/generate-quiz';
 import { POST as generateExamOnServer } from '../api/generate-exam';
 import { useUser } from './UserContext';
@@ -9,6 +9,7 @@ interface GameContextType {
     gameState: GameState;
     selectedSubject: Subject | null;
     selectedTopic: Topic | null;
+    selectedEnglishSubTopic: SubTopic | null;
     questions: Question[];
     passage: string | null;
     score: number;
@@ -19,6 +20,7 @@ interface GameContextType {
     userAnswers: (string | string[] | null)[];
     handleSubjectSelect: (subject: Subject) => void;
     handleTopicSelect: (topic: Topic) => Promise<void>;
+    handleEnglishSubTopicSelect: (subTopic: SubTopic) => Promise<void>;
     handleFinishQuiz: () => void;
     handleRestart: () => void;
     handleBackToSubjects: () => void;
@@ -40,6 +42,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [gameState, setGameState] = useState<GameState>('subject_selection');
     const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
     const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
+    const [selectedEnglishSubTopic, setSelectedEnglishSubTopic] = useState<SubTopic | null>(null);
     const [questions, setQuestions] = useState<Question[]>([]);
     const [passage, setPassage] = useState<string | null>(null);
     const [score, setScore] = useState(0);
@@ -59,6 +62,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setError(null);
         setExamDuration(null);
         setUserAnswers([]);
+        setSelectedEnglishSubTopic(null);
     };
 
     const handleSubjectSelect = (subject: Subject) => {
@@ -92,6 +96,12 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const handleTopicSelect = useCallback(async (topic: Topic) => {
         if (!selectedSubject) return;
         setSelectedTopic(topic);
+
+        if (selectedSubject.id === 'tieng_anh' && topic.id === 'tap_doc_en') {
+            setGameState('english_reading_subtopic_selection');
+            return;
+        }
+
         setGameState('loading_quiz');
         resetQuizState();
         try {
@@ -122,6 +132,34 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setGameState('topic_selection');
         }
     }, [selectedSubject]);
+
+    const handleEnglishSubTopicSelect = useCallback(async (subTopic: SubTopic) => {
+        if (!selectedSubject || !selectedTopic) return;
+
+        setSelectedEnglishSubTopic(subTopic);
+        setGameState('loading_quiz');
+        resetQuizState();
+
+        try {
+            const { passage: generatedPassage, questions: quizQuestions } = await generateQuizOnServer({
+                subjectName: selectedSubject.name,
+                topicName: selectedTopic.name,
+                subTopicName: subTopic.name
+            });
+            setQuestions(quizQuestions);
+            setUserAnswers(Array(quizQuestions.length).fill(null));
+            setPassage(generatedPassage);
+
+            setGameState('reading_activity');
+        } catch (err) {
+            if (err instanceof Error) {
+                setError(err.message);
+            } else {
+                setError("Đã xảy ra lỗi không xác định.");
+            }
+            setGameState('english_reading_subtopic_selection');
+        }
+    }, [selectedSubject, selectedTopic]);
 
     const handleStartExam = () => {
         setGameState('exam_options');
@@ -342,6 +380,13 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const handleRestart = () => {
         const inExamMode = (gameState === 'results' || gameState === 'review') && timeLimit > 0;
+        
+        if (selectedTopic?.id === 'tap_doc_en') {
+            setGameState('english_reading_subtopic_selection');
+            resetQuizState();
+            return;
+        }
+
         resetQuizState();
         if (inExamMode) {
             setGameState('exam_options');
@@ -368,6 +413,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         gameState,
         selectedSubject,
         selectedTopic,
+        selectedEnglishSubTopic,
         questions,
         passage,
         score,
@@ -378,6 +424,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         userAnswers,
         handleSubjectSelect,
         handleTopicSelect,
+        handleEnglishSubTopicSelect,
         handleFinishQuiz,
         handleRestart,
         handleBackToSubjects,
