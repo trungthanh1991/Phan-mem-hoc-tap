@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { RearrangeWordsQuestion } from '../../types';
 import SpeechButton from '../SpeechButton';
@@ -72,8 +73,28 @@ const RearrangeWords: React.FC<Props> = ({ question, userAnswer, setUserAnswer, 
       setWordBank([...initialWords].sort(() => Math.random() - 0.5));
   }
   
-  const normalize = (str: string) => str.toLowerCase().trim().replace(/[.,!?;]$/, '');
-  const isCorrect = isAnswered && normalize(userAnswer?.join(' ') || '') === normalize(question.correctAnswer);
+  // Logic kiểm tra toán học (được đồng bộ từ QuizView để hiển thị màu đúng)
+  const isCorrect = useMemo(() => {
+      if (!isAnswered) return false;
+      const normalize = (str: string) => str.toLowerCase().trim().replace(/[.,!?;]$/, '');
+      const userString = userAnswer?.join(' ') || '';
+      const correctString = question.correctAnswer;
+
+      if (normalize(userString) === normalize(correctString)) return true;
+
+      if (correctString.includes('=')) {
+           try {
+               if (!/^[0-9+\-*/().\s=x:]+$/.test(userString)) return false;
+               const toJS = (s: string) => s.replace(/x/g, '*').replace(/:/g, '/').replace(/=/g, '===');
+               // eslint-disable-next-line no-new-func
+               const fn = new Function(`return ${toJS(userString)}`);
+               return fn() === true;
+           } catch (e) {
+               return false;
+           }
+      }
+      return false;
+  }, [isAnswered, userAnswer, question.correctAnswer]);
 
   return (
     <div>

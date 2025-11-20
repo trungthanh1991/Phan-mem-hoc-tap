@@ -1,9 +1,11 @@
+
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import { GameProvider } from './contexts/GameContext';
 import { UserProvider } from './contexts/UserContext';
 import { SpeechProvider } from './contexts/SpeechContext';
+import { SoundProvider } from './contexts/SoundContext';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -16,7 +18,9 @@ root.render(
     <UserProvider>
       <GameProvider>
         <SpeechProvider>
-          <App />
+          <SoundProvider>
+            <App />
+          </SoundProvider>
         </SpeechProvider>
       </GameProvider>
     </UserProvider>

@@ -1,11 +1,19 @@
-import React from 'react';
+
+import React, { useEffect } from 'react';
 import { Badge } from '../types';
 import Card from './Card';
+import { useSound } from '../contexts/SoundContext';
 
 const BadgeUnlockCard: React.FC<{ badge: Badge }> = ({ badge }) => {
+    const { playSound } = useSound();
+
+    useEffect(() => {
+        playSound('badge');
+    }, [playSound]);
+
     return (
-        <Card className="bg-gradient-to-br from-yellow-300 to-amber-400 border-2 border-yellow-500 flex items-center p-4 space-x-4 animate-fade-in-up">
-            <div className="flex-shrink-0 bg-white/30 p-3 rounded-full">
+        <Card className="bg-gradient-to-br from-yellow-300 to-amber-400 border-2 border-yellow-500 flex items-center p-4 space-x-4 animate-fade-in-up shadow-xl transform hover:scale-105 transition-all">
+            <div className="flex-shrink-0 bg-white/30 p-3 rounded-full animate-pulse">
                 <badge.icon className="h-12 w-12 text-yellow-800" />
             </div>
             <div>

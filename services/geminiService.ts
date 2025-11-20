@@ -6,6 +6,9 @@ import { Question, ReadingAnalysis, WritingAnalysis } from '../types';
 // Toàn bộ các hàm trong file này chỉ nên được gọi từ các API route (trong thư mục /api)
 // và không bao giờ được gọi trực tiếp từ các component React phía client.
 
+// Định nghĩa danh sách các tên biến môi trường để kiểm tra
+const ENV_KEY_NAMES = ['API_KEY', 'API_KEY_2', 'API_KEY_3'];
+
 // Lấy các khóa API từ biến môi trường và lọc ra những khóa hợp lệ.
 const API_KEYS = [
   import.meta.env.VITE_API_KEY,
@@ -36,6 +39,53 @@ const getAiClient = () => {
 
     // Trả về một instance mới của GoogleGenAI với khóa API đã chọn.
     return new GoogleGenAI({ apiKey });
+};
+
+export interface ApiStatus {
+    keyName: string;
+    status: 'active' | 'error' | 'missing';
+    message?: string;
+    latency?: number;
+}
+
+export const checkSystemHealth = async (): Promise<ApiStatus[]> => {
+    const results: ApiStatus[] = [];
+
+    // Lặp qua từng tên key đã định nghĩa để kiểm tra
+    for (const keyName of ENV_KEY_NAMES) {
+        const keyValue = process.env[keyName];
+
+        if (!keyValue || !keyValue.trim()) {
+            results.push({ keyName, status: 'missing', message: 'Chưa được cấu hình' });
+            continue;
+        }
+
+        const startTime = Date.now();
+        try {
+            // Tạo client riêng cho key này để test
+            const ai = new GoogleGenAI({ apiKey: keyValue });
+            
+            // Gọi một request siêu nhẹ để test kết nối
+            await ai.models.generateContent({
+                model: "gemini-2.5-flash",
+                contents: "ping",
+                config: { maxOutputTokens: 1 }
+            });
+
+            const latency = Date.now() - startTime;
+            results.push({ keyName, status: 'active', message: 'Hoạt động tốt', latency });
+
+        } catch (error: any) {
+            let errorMessage = "Lỗi kết nối";
+            if (error.message.includes("429")) errorMessage = "Vượt quá giới hạn (Quota)";
+            else if (error.message.includes("403")) errorMessage = "Key không hợp lệ hoặc bị chặn";
+            else if (error.message) errorMessage = error.message;
+
+            results.push({ keyName, status: 'error', message: errorMessage });
+        }
+    }
+
+    return results;
 };
 
 

@@ -1,7 +1,7 @@
 
-
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useGame } from '../contexts/GameContext';
+import { useSound } from '../contexts/SoundContext';
 import { QUIZ_LENGTH } from '../constants';
 import Card from './Card';
 import Button from './Button';
@@ -10,9 +10,19 @@ import BadgeUnlockCard from './BadgeUnlockCard';
 
 const ResultsView: React.FC = () => {
   const { score, questions, handleRestart, handleBackToSubjects, selectedSubject, newlyEarnedBadges, handleBackToTopicSelection, selectedTopic, handleReviewQuiz } = useGame();
+  const { playSound } = useSound();
+  
   const totalQuestions = questions.length || QUIZ_LENGTH;
 
   const percentage = totalQuestions > 0 ? (score / totalQuestions) * 100 : 0;
+  
+  useEffect(() => {
+    if (percentage >= 70) {
+      // Play delay slightly to allow component mount
+      setTimeout(() => playSound('win'), 500);
+    }
+  }, [percentage, playSound]);
+
   let message = "";
   let emoji = "";
 
