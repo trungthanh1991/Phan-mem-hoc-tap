@@ -11,7 +11,6 @@ import Timer from './Timer';
 import SpeechButton from './SpeechButton';
 import { CheckCircleIcon, XCircleIcon } from './icons';
 import { Question } from '../types';
-import Mascot, { MascotEmotion } from './Mascot';
 
 interface QuizViewProps {
   mode: 'quiz' | 'review';
@@ -28,7 +27,6 @@ const QuizView: React.FC<QuizViewProps> = ({ mode }) => {
 
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [currentUserAnswer, setCurrentUserAnswer] = useState<(string | string[] | null)>(null);
-    const [mascotEmotion, setMascotEmotion] = useState<MascotEmotion>('idle');
     
     const isQuizMode = mode === 'quiz';
     const isReviewMode = mode === 'review';
@@ -53,7 +51,6 @@ const QuizView: React.FC<QuizViewProps> = ({ mode }) => {
     useEffect(() => {
         if (isQuizMode && !isCurrentQuestionAnswered) {
             setCurrentUserAnswer(null);
-            setMascotEmotion('idle');
         }
     }, [currentQuestionIndex, isQuizMode, isCurrentQuestionAnswered]);
 
@@ -73,10 +70,16 @@ const QuizView: React.FC<QuizViewProps> = ({ mode }) => {
         if (normalize(userString) === normalize(correctString)) return true;
 
         // 2. Kiểm tra toán học (cho phép giao hoán 2x5 = 5x2)
+        // Chỉ áp dụng nếu câu hỏi chứa dấu bằng '=' và là dạng sắp xếp từ hoặc điền từ
         if ((question.type === 'REARRANGE_WORDS' || question.type === 'FILL_IN_THE_BLANK') && correctString.includes('=')) {
              try {
+                 // Chỉ cho phép các ký tự toán học an toàn
                  if (!/^[0-9+\-*/().\s=x:]+$/.test(userString)) return false;
+
+                 // Chuyển đổi ký tự hiển thị sang toán tử JS
                  const toJS = (s: string) => s.replace(/x/g, '*').replace(/:/g, '/').replace(/=/g, '===');
+                 
+                 // Thực thi phép so sánh (Ví dụ: "2 * 5 === 10" trả về true)
                  // eslint-disable-next-line no-new-func
                  const fn = new Function(`return ${toJS(userString)}`);
                  return fn() === true;
@@ -104,17 +107,14 @@ const QuizView: React.FC<QuizViewProps> = ({ mode }) => {
         if (answerIsCorrect) {
             playSound('correct');
             incrementScore();
-            setMascotEmotion('happy');
         } else {
             playSound('wrong');
-            setMascotEmotion('sad');
         }
         recordAnswer(currentQuestionIndex, currentUserAnswer);
     };
 
     const handleNext = () => {
         playSound('click');
-        setMascotEmotion('idle');
         if (currentQuestionIndex < totalQuestions - 1) {
             setCurrentQuestionIndex(prev => prev + 1);
         } else if (isQuizMode) {
@@ -124,9 +124,8 @@ const QuizView: React.FC<QuizViewProps> = ({ mode }) => {
     
     const handlePrevious = () => {
         playSound('click');
-        setMascotEmotion('idle');
         if (currentQuestionIndex > 0) {
-            setCurrentQuestionIndex(prev => prev - 1);
+            setCurrentQuestionIndex(prev => prev - 1); // FIX: Was + 1
         }
     };
     
@@ -177,22 +176,12 @@ const QuizView: React.FC<QuizViewProps> = ({ mode }) => {
 
     return (
         <div className="w-full max-w-3xl mx-auto p-4 md:p-6 relative">
-            {/* Mascot floating in the corner */}
-            <div className="fixed bottom-4 right-4 md:bottom-8 md:right-8 z-50 pointer-events-none hidden md:block">
-                <Mascot emotion={mascotEmotion} size={140} />
-            </div>
-
-             {/* Mascot for mobile (smaller, inline) */}
-            <div className="md:hidden absolute top-14 right-0 z-10 opacity-80 pointer-events-none">
-                 <Mascot emotion={mascotEmotion} size={80} />
-            </div>
-
-            <div className="absolute top-0 left-0 md:top-4 md:left-4 z-10">
+            <div className="absolute top-0 left-0 md:top-4 md:left-4">
                 <button 
                     onClick={handleBack} 
-                    className="text-primary hover:underline bg-white/50 rounded-full px-3 py-1 backdrop-blur-sm"
+                    className="text-primary hover:underline"
                 >
-                    &larr; {isReviewMode ? 'Về kết quả' : 'Quay lại'}
+                    &larr; {isReviewMode ? 'Về trang kết quả' : 'Quay lại'}
                 </button>
             </div>
             
@@ -201,7 +190,7 @@ const QuizView: React.FC<QuizViewProps> = ({ mode }) => {
             )}
 
             {passage && selectedTopic?.id === 'doc_hieu_doan_van' && (
-                <Card className="mb-6 bg-white/80 backdrop-blur-sm mt-12">
+                <Card className="mb-6 bg-white/80 backdrop-blur-sm mt-8">
                     <div className="flex justify-between items-start mb-2">
                         <h3 className="text-xl font-bold text-primary-dark">Đoạn văn</h3>
                         <SpeechButton textToSpeak={passage} lang={lang} />
@@ -210,48 +199,48 @@ const QuizView: React.FC<QuizViewProps> = ({ mode }) => {
                 </Card>
             )}
 
-            <div className="mb-6 mt-12">
-                <div className="flex justify-between items-center mb-2 text-secondary font-semibold">
-                    <span className="bg-white/50 px-2 rounded-md">Câu {currentQuestionIndex + 1} / {totalQuestions}</span>
+            <div className="mb-6 mt-8">
+                <div className="flex justify-between items-center mb-2 text-secondary">
+                    <span>Câu hỏi {currentQuestionIndex + 1} / {totalQuestions}</span>
                     {isCurrentQuestionAnswered && (
                         isCorrect ? 
-                        <span className="flex items-center gap-1 font-bold text-success bg-white/80 px-2 rounded-full shadow-sm"><CheckCircleIcon className="h-5 w-5" /> Đúng</span> :
-                        <span className="flex items-center gap-1 font-bold text-danger bg-white/80 px-2 rounded-full shadow-sm"><XCircleIcon className="h-5 w-5" /> Sai</span>
+                        <span className="flex items-center gap-1 font-bold text-success"><CheckCircleIcon className="h-5 w-5" /> Đúng</span> :
+                        <span className="flex items-center gap-1 font-bold text-danger"><XCircleIcon className="h-5 w-5" /> Sai</span>
                     )}
                 </div>
-                <div className="w-full bg-secondary-light rounded-full h-4 shadow-inner overflow-hidden">
-                    <div className={`${selectedSubject?.baseColor || 'bg-primary'} h-4 rounded-full transition-all duration-500 ease-out`} style={{ width: `${progressPercentage}%` }}></div>
+                <div className="w-full bg-secondary-light rounded-full h-4">
+                    <div className={`${selectedSubject?.baseColor || 'bg-primary'} h-4 rounded-full transition-all duration-500`} style={{ width: `${progressPercentage}%` }}></div>
                 </div>
             </div>
 
-            <Card className={`${selectedSubject?.lightBgColor || 'bg-white'} shadow-xl transition-all duration-300`}>
+            <Card className={`${selectedSubject?.lightBgColor || 'bg-white'}`}>
                 {renderQuestion()}
             </Card>
 
             {isCurrentQuestionAnswered && (
-                <Card className={`mt-6 ${isCorrect ? 'bg-success-light border-2 border-success' : 'bg-danger-light border-2 border-danger'} animate-fade-in-up`}>
+                <Card className={`mt-6 ${isCorrect ? 'bg-success-light' : 'bg-danger-light'}`}>
                     <h4 className="font-bold text-lg mb-2 flex items-center gap-2">
                         {isCorrect ? 
                             <CheckCircleIcon className="h-7 w-7 text-success-dark"/> : 
                             <XCircleIcon className="h-7 w-7 text-danger-dark"/>
                         }
                         <span className={isCorrect ? 'text-success-dark' : 'text-danger-dark'}>
-                            {isCorrect ? 'Chính xác! Bé giỏi quá!' : 'Chưa đúng rồi, cố lên nhé!'}
+                            {isCorrect ? 'Chính xác! Làm tốt lắm!' : 'Chưa đúng rồi, bé ơi!'}
                         </span>
                     </h4>
                     <p className="text-secondary-dark">{currentQuestion.explanation}</p>
                 </Card>
             )}
 
-            <div className="mt-8 grid grid-cols-3 gap-4 items-center mb-20 md:mb-0">
+            <div className="mt-8 grid grid-cols-3 gap-4 items-center">
                 <div className="text-left">
                      <Button
                         onClick={handlePrevious}
                         variant="secondary"
-                        className={`py-3 px-4 md:px-6 text-lg ${currentQuestionIndex === 0 ? 'invisible' : ''}`}
-                        disableSound={true}
+                        className={`py-3 px-6 text-lg ${currentQuestionIndex === 0 ? 'invisible' : ''}`}
+                        disableSound={true} // Sound is handled in handlePrevious
                     >
-                        &larr; Trước
+                        &larr; Câu trước
                     </Button>
                 </div>
 
@@ -261,8 +250,7 @@ const QuizView: React.FC<QuizViewProps> = ({ mode }) => {
                             onClick={handleCheckAnswer} 
                             variant="primary" 
                             disabled={currentUserAnswer === null || (Array.isArray(currentUserAnswer) && currentUserAnswer.length === 0)}
-                            disableSound={true}
-                            className="shadow-xl transform hover:scale-110 transition-all"
+                            disableSound={true} // Sound handled in check function
                         >
                             Kiểm tra
                         </Button>
@@ -274,10 +262,10 @@ const QuizView: React.FC<QuizViewProps> = ({ mode }) => {
                         <Button 
                             onClick={handleNext} 
                             variant={isLastQuestion ? "success" : "primary"}
-                            className={`py-3 px-4 md:px-6 text-lg ${isLastQuestion && isReviewMode ? 'invisible' : ''}`}
-                            disableSound={true}
+                            className={`py-3 px-6 text-lg ${isLastQuestion && isReviewMode ? 'invisible' : ''}`}
+                            disableSound={true} // Sound handled in handleNext
                         >
-                            {isLastQuestion ? 'Xong' : 'Tiếp →'}
+                            {isLastQuestion ? 'Hoàn thành' : 'Câu tiếp theo →'}
                         </Button>
                     )}
                 </div>
