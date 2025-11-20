@@ -9,7 +9,7 @@ import { Question, ReadingAnalysis, WritingAnalysis } from '../types';
 // Định nghĩa danh sách các tên biến môi trường để kiểm tra
 const ENV_KEY_NAMES = ['API_KEY', 'API_KEY_2', 'API_KEY_3'];
 
-// Lấy các khóa API từ biến môi trường và lọc ra những khóa hợp lệ.
+// Lấy các khóa API từ biến môi trường và lọc ra những khóa hợp lệok.
 const API_KEYS = [
   import.meta.env.VITE_API_KEY,
   import.meta.env.API_KEY_2,
