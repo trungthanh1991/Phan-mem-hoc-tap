@@ -1,0 +1,7 @@
+{
+  "name": "Sân Chơi Trí Tuệ Cho Bé Lớp 3",
+  "description": "Một ứng dụng học tập và làm bài thi vui nhộn dành cho trẻ em 8 tuổi (lớp 3), sử dụng Gemini để tạo ra các câu hỏi hấp dẫn về các môn Toán, Tiếng Việt và Tự nhiên & Xã hội.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
