@@ -7,13 +7,21 @@ import { Question, ReadingAnalysis, WritingAnalysis } from '../types';
 // và không bao giờ được gọi trực tiếp từ các component React phía client.
 
 // Định nghĩa danh sách các tên biến môi trường để kiểm tra
-const ENV_KEY_NAMES = ['API_KEY', 'API_KEY_2', 'API_KEY_3'];
+const ENV_KEY_NAMES = ['VITE_API_KEY', 'VITE_API_KEY_2', 'VITE_API_KEY_3'];
 
-// Lấy các khóa API từ biến môi trường và lọc ra những khóa hợp lệok.
+// Helper để lấy biến môi trường an toàn từ cả process.env và import.meta.env
+const getEnvVar = (key: string, viteValue?: string) => {
+    if (typeof process !== 'undefined' && process.env && process.env[key]) {
+        return process.env[key];
+    }
+    return viteValue;
+};
+
+// Lấy các khóa API từ biến môi trường và lọc ra những khóa hợp lệ.
 const API_KEYS = [
-  import.meta.env.VITE_API_KEY,
-  import.meta.env.API_KEY_2,
-  import.meta.env.VITE_API_KEY_3
+    getEnvVar('VITE_API_KEY', import.meta.env?.VITE_API_KEY),
+    getEnvVar('VITE_API_KEY_2', import.meta.env?.VITE_API_KEY_2),
+    getEnvVar('VITE_API_KEY_3', import.meta.env?.VITE_API_KEY_3)
 ].filter((key): key is string => typeof key === "string" && !!key.trim());
 
 // Ghi log số lượng khóa API đã được tải thành công.
@@ -26,7 +34,7 @@ let currentApiKeyIndex = 0;
 const getAiClient = () => {
     // Nếu không có khóa API nào được cấu hình, báo lỗi.
     if (API_KEYS.length === 0) {
-        const errorMessage = "Lỗi: Không tìm thấy khóa API Gemini nào hợp lệ trong các biến môi trường (API_KEY, API_KEY_2, API_KEY_3).";
+        const errorMessage = "Lỗi: Không tìm thấy khóa API Gemini nào hợp lệ trong các biến môi trường (VITE_API_KEY, VITE_API_KEY_2, VITE_API_KEY_3).";
         console.error(errorMessage);
         throw new Error("Chưa cấu hình khóa API cho Gemini.");
     }
@@ -64,7 +72,7 @@ export const checkSystemHealth = async (): Promise<ApiStatus[]> => {
         try {
             // Tạo client riêng cho key này để test
             const ai = new GoogleGenAI({ apiKey: keyValue });
-            
+
             // Gọi một request siêu nhẹ để test kết nối
             await ai.models.generateContent({
                 model: "gemini-2.5-flash",
@@ -92,11 +100,11 @@ export const checkSystemHealth = async (): Promise<ApiStatus[]> => {
 export const generateQuiz = async (subjectName: string, topicName: string, subTopicName?: string): Promise<{ passage: string | null; questions: Question[] }> => {
     try {
         const ai = getAiClient();
-        
+
         const isEnglish = subjectName === 'Tiếng Anh';
         const language = isEnglish ? 'Tiếng Anh' : 'Tiếng Việt';
-        const instructionsForEnglish = isEnglish 
-            ? 'Nội dung câu hỏi, lựa chọn và đáp án phải hoàn toàn bằng Tiếng Anh. Lời giải thích nên bằng Tiếng Việt để giúp bé hiểu rõ.' 
+        const instructionsForEnglish = isEnglish
+            ? 'Nội dung câu hỏi, lựa chọn và đáp án phải hoàn toàn bằng Tiếng Anh. Lời giải thích nên bằng Tiếng Việt để giúp bé hiểu rõ.'
             : 'Toàn bộ nội dung BẮT BUỘC phải là Tiếng Việt.';
 
         let prompt = '';
@@ -105,15 +113,15 @@ export const generateQuiz = async (subjectName: string, topicName: string, subTo
 
         const isReadAloudTopic = ['Luyện đọc', 'Nghe đọc', 'Tập đọc'].includes(topicName);
         const isWritePassageTopic = topicName === 'Luyện viết';
-        
+
         if (isReadAloudTopic || isWritePassageTopic) {
-             const activityType = isReadAloudTopic ? 'READ_ALOUD' : 'WRITE_PASSAGE';
-             
-             if (topicName === 'Tập đọc' && isEnglish) {
+            const activityType = isReadAloudTopic ? 'READ_ALOUD' : 'WRITE_PASSAGE';
+
+            if (topicName === 'Tập đọc' && isEnglish) {
                 const subTopicPrompt = subTopicName
                     ? `thuộc chủ đề "${subTopicName}".`
                     : 'ngẫu nhiên, đơn giản, phổ biến, phù hợp cho trẻ 8 tuổi.';
-                
+
                 prompt = `
                     Bạn là giáo viên Tiếng Anh cho trẻ em. Hãy tạo MỘT câu hỏi dạng READ_ALOUD cho học sinh lớp 3 (8 tuổi) đang học Tiếng Anh chủ đề "Tập đọc".
                     - Cung cấp một từ vựng hoặc cụm từ Tiếng Anh ${subTopicPrompt}
@@ -138,7 +146,7 @@ export const generateQuiz = async (subjectName: string, topicName: string, subTo
                         required: ["type", "passage", "translation", "correctAnswer", "explanation"],
                     },
                 };
-             } else {
+            } else {
                 const passageLang = isEnglish ? 'Tiếng Anh đơn giản' : 'Tiếng Việt';
                 let passageLength = '30-50'; // Mặc định cho "Luyện đọc" Tiếng Việt
                 if (topicName === 'Nghe đọc') {
@@ -148,7 +156,7 @@ export const generateQuiz = async (subjectName: string, topicName: string, subTo
                 } else if (topicName === 'Luyện viết') {
                     passageLength = '10'; // Giữ ngắn cho việc viết
                 }
-    
+
                 prompt = `
                     Bạn là một giáo viên tiểu học vui tính. Hãy tạo ra MỘT câu hỏi dạng ${activityType} cho học sinh lớp 3 (8 tuổi) đang học ${language}.
                     - Tạo một đoạn văn ${passageLang} ngắn (khoảng ${passageLength} từ), nội dung trong sáng, vui vẻ, phù hợp với trẻ em.
@@ -170,9 +178,9 @@ export const generateQuiz = async (subjectName: string, topicName: string, subTo
                         required: ["type", "passage", "correctAnswer", "explanation"],
                     },
                 };
-             }
+            }
         } else if (isReadingComprehension) {
-             prompt = `
+            prompt = `
                 Bạn là một giáo viên tiểu học. Hãy tạo một bài tập đọc hiểu cho học sinh lớp 3 (8 tuổi).
                 Bài tập bao gồm:
                 1.  Một đoạn văn Tiếng Việt ngắn (khoảng 50-70 từ) phù hợp với lứa tuổi, nội dung trong sáng, giáo dục.
@@ -198,7 +206,7 @@ export const generateQuiz = async (subjectName: string, topicName: string, subTo
                                 correctAnswer: { type: Type.STRING },
                                 explanation: { type: Type.STRING },
                             },
-                             required: ["type", "question", "options", "correctAnswer", "explanation"],
+                            required: ["type", "question", "options", "correctAnswer", "explanation"],
                         },
                     },
                 },
@@ -263,7 +271,7 @@ export const generateQuiz = async (subjectName: string, topicName: string, subTo
             }
         } else {
             if (Array.isArray(data) && data.length > 0) {
-                 return { passage: null, questions: data as Question[] };
+                return { passage: null, questions: data as Question[] };
             }
         }
 
@@ -285,10 +293,10 @@ export const generateExam = async (subjectName: string, durationPreference: 'sho
             long: 40,
         };
         const numberOfQuestions = questionCountMapping[durationPreference];
-        
+
         const isEnglish = subjectName === 'Tiếng Anh';
-        const instructionsForEnglish = isEnglish 
-            ? 'Nội dung câu hỏi, lựa chọn và đáp án phải hoàn toàn bằng Tiếng Anh. Lời giải thích nên bằng Tiếng Việt để giúp bé hiểu rõ.' 
+        const instructionsForEnglish = isEnglish
+            ? 'Nội dung câu hỏi, lựa chọn và đáp án phải hoàn toàn bằng Tiếng Anh. Lời giải thích nên bằng Tiếng Việt để giúp bé hiểu rõ.'
             : 'Toàn bộ nội dung BẮT BUỘC phải là Tiếng Việt.';
 
         const prompt = `
@@ -381,7 +389,7 @@ export const analyzeReading = async (passage: string, audioBase64: string, mimeT
 
             QUAN TRỌNG: Trả về kết quả dưới dạng một đối tượng JSON duy nhất. KHÔNG trả về bất kỳ văn bản nào khác ngoài JSON.
         `;
-        
+
         const responseSchema = {
             type: Type.OBJECT,
             properties: {
@@ -412,7 +420,7 @@ export const analyzeReading = async (passage: string, audioBase64: string, mimeT
 
         const response: GenerateContentResponse = await ai.models.generateContent({
             model: 'gemini-2.5-pro',
-            contents: { parts: [ {text: prompt}, audioPart] },
+            contents: { parts: [{ text: prompt }, audioPart] },
             config: {
                 responseMimeType: "application/json",
                 responseSchema: responseSchema,
@@ -477,7 +485,7 @@ export const analyzeHandwriting = async (passage: string, imageBase64: string): 
 
         const response: GenerateContentResponse = await ai.models.generateContent({
             model: 'gemini-2.5-pro',
-            contents: { parts: [ {text: prompt}, imagePart] },
+            contents: { parts: [{ text: prompt }, imagePart] },
             config: {
                 responseMimeType: "application/json",
                 responseSchema: responseSchema,
