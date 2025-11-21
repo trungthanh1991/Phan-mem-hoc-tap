@@ -28,19 +28,19 @@ export const SoundProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const playTone = (freq: number, type: OscillatorType, duration: number, startTime: number, volume: number = 0.1) => {
     if (!audioCtxRef.current || isMuted) return;
     const ctx = audioCtxRef.current;
-    
+
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
-    
+
     osc.type = type;
     osc.frequency.setValueAtTime(freq, startTime);
-    
+
     gain.gain.setValueAtTime(volume, startTime);
     gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
-    
+
     osc.connect(gain);
     gain.connect(ctx.destination);
-    
+
     osc.start(startTime);
     osc.stop(startTime + duration);
   };
@@ -53,31 +53,43 @@ export const SoundProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
     switch (type) {
       case 'click':
-        playTone(600, 'sine', 0.1, now, 0.05);
+        // Pop sound: Rapid pitch drop
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.frequency.setValueAtTime(800, now);
+        osc.frequency.exponentialRampToValueAtTime(100, now + 0.1);
+        gain.gain.setValueAtTime(0.1, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.1);
         break;
       case 'correct':
-        // Ding-dong: C5 -> E5
-        playTone(523.25, 'sine', 0.3, now, 0.1);
-        playTone(659.25, 'sine', 0.6, now + 0.1, 0.1);
+        // Cheerful chime: C5 -> E5 -> G5 (Major triad)
+        playTone(523.25, 'sine', 0.1, now, 0.1);
+        playTone(659.25, 'sine', 0.1, now + 0.1, 0.1);
+        playTone(783.99, 'sine', 0.4, now + 0.2, 0.1);
         break;
       case 'wrong':
-        // Buzz low
-        playTone(150, 'sawtooth', 0.3, now, 0.05);
-        playTone(130, 'sawtooth', 0.3, now + 0.1, 0.05);
+        // Soft "Uh-oh": G4 -> Eb4
+        playTone(392.00, 'triangle', 0.2, now, 0.08);
+        playTone(311.13, 'triangle', 0.4, now + 0.25, 0.08);
         break;
       case 'win':
-        // Fanfare arpeggio
-        playTone(523.25, 'triangle', 0.2, now, 0.1); // C
-        playTone(659.25, 'triangle', 0.2, now + 0.1, 0.1); // E
-        playTone(783.99, 'triangle', 0.2, now + 0.2, 0.1); // G
-        playTone(1046.50, 'triangle', 0.8, now + 0.3, 0.1); // C high
+        // Victory fanfare: C -> E -> G -> C (High) with rhythm
+        playTone(523.25, 'square', 0.1, now, 0.05);
+        playTone(523.25, 'square', 0.1, now + 0.15, 0.05);
+        playTone(523.25, 'square', 0.1, now + 0.30, 0.05);
+        playTone(659.25, 'square', 0.4, now + 0.45, 0.05); // Long E
+        playTone(783.99, 'square', 0.4, now + 0.90, 0.05); // Long G
+        playTone(1046.50, 'square', 0.8, now + 1.35, 0.05); // Long C High
         break;
       case 'badge':
-        // Magical twinkle
-        playTone(880, 'sine', 0.1, now, 0.1);
-        playTone(1108, 'sine', 0.1, now + 0.1, 0.1);
-        playTone(1318, 'sine', 0.1, now + 0.2, 0.1);
-        playTone(1760, 'sine', 0.4, now + 0.3, 0.1);
+        // Magical sparkle
+        [880, 1108, 1318, 1760, 2093].forEach((freq, i) => {
+          playTone(freq, 'sine', 0.2, now + i * 0.08, 0.05);
+        });
         break;
     }
   }, [initAudio, isMuted]);

@@ -18,6 +18,7 @@ interface GameContextType {
     newlyEarnedBadges: Badge[];
     examDuration: 'short' | 'medium' | 'long' | null;
     userAnswers: (string | string[] | null)[];
+    setGameState: (state: GameState) => void;
     handleSubjectSelect: (subject: Subject) => void;
     handleTopicSelect: (topic: Topic) => Promise<void>;
     handleEnglishSubTopicSelect: (subTopic: SubTopic) => Promise<void>;
@@ -83,12 +84,12 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setGameState('topic_selection');
         resetQuizState();
     };
-    
+
     const handleBackToExamOptions = () => {
         setGameState('exam_options');
         resetQuizState();
     };
-    
+
     const handleBackToResults = () => {
         setGameState('results');
     };
@@ -212,9 +213,9 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         const statsBefore = user.getUserData();
         const statsAfter = user.updatePostQuizData(
-            selectedSubject.id, 
-            selectedTopic?.id || 'exam', 
-            score, 
+            selectedSubject.id,
+            selectedTopic?.id || 'exam',
+            score,
             questions.length || QUIZ_LENGTH
         );
 
@@ -227,15 +228,15 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 }
             }
         };
-        
+
         const questionCount = questions.length;
         const isPerfectScore = score === questionCount;
 
-        const getStatCount = (s: QuizStats, getter: (topic: TopicStats) => number) => 
+        const getStatCount = (s: QuizStats, getter: (topic: TopicStats) => number) =>
             Object.values(s)
-                  .flatMap(subject => Object.values(subject))
-                  .reduce((total, topic) => total + getter(topic), 0);
-        
+                .flatMap(subject => Object.values(subject))
+                .reduce((total, topic) => total + getter(topic), 0);
+
         const totalQuizzesBefore = getStatCount(statsBefore.stats, topic => topic.timesCompleted);
         const totalQuizzesAfter = getStatCount(statsAfter.stats, topic => topic.timesCompleted);
         const totalPerfectScoresBefore = getStatCount(statsBefore.stats, topic => topic.perfectScoreCount);
@@ -259,7 +260,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (totalCorrectBefore < 1000 && totalCorrectAfter >= 1000) tryAddBadge('correct_1000');
         if (totalCorrectBefore < 2500 && totalCorrectAfter >= 2500) tryAddBadge('correct_2500');
         if (totalCorrectBefore < 5000 && totalCorrectAfter >= 5000) tryAddBadge('correct_5000');
-        
+
         if (isPerfectScore) {
             tryAddBadge('perfect_score');
             if (statsAfter.perfectScoreStreak >= 3) tryAddBadge('perfect_streak_3');
@@ -271,9 +272,9 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (totalPerfectScoresBefore < 15 && totalPerfectScoresAfter >= 15) tryAddBadge('perfect_score_15');
         if (totalPerfectScoresBefore < 25 && totalPerfectScoresAfter >= 25) tryAddBadge('perfect_score_25');
         if (totalPerfectScoresBefore < 50 && totalPerfectScoresAfter >= 50) tryAddBadge('perfect_score_50');
-        
+
         if (examDuration) {
-            if(examDuration === 'long') tryAddBadge('brave_challenger');
+            if (examDuration === 'long') tryAddBadge('brave_challenger');
             const examPercentage = (score / questionCount) * 100;
             if (examPercentage >= 80) {
                 if (examDuration === 'short') tryAddBadge('exam_ace_short');
@@ -291,7 +292,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (statsAfter.consecutivePlayDays >= 7) tryAddBadge('daily_streak_7');
         if (statsAfter.consecutivePlayDays >= 14) tryAddBadge('daily_streak_14');
         if (statsAfter.consecutivePlayDays >= 30) tryAddBadge('daily_streak_30');
-        
+
         const now = new Date();
         const hour = now.getHours();
         const day = now.getDay();
@@ -321,7 +322,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             };
             if (topicBadgeMap[selectedTopic.id]) tryAddBadge(topicBadgeMap[selectedTopic.id]);
         }
-        
+
         for (const subject of SUBJECTS) {
             const subjectTopics = TOPICS[subject.id].filter(t => !['doc_doan_van', 'luyen_viet', 'doc_doan_van_en', 'nghe_doc_en', 'nghe_doc'].includes(t.id));
             const subjectStats = statsAfter.stats[subject.id] || {};
@@ -338,13 +339,13 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 tryAddBadge(`${subject.id}_prodigy`);
             }
         }
-        
+
         const subjectsPlayed = Object.keys(statsAfter.stats);
         if (subjectsPlayed.length === SUBJECTS.length) {
-             tryAddBadge('curious_mind');
+            tryAddBadge('curious_mind');
         }
 
-        const hasPerfectInAll = SUBJECTS.every(sub => 
+        const hasPerfectInAll = SUBJECTS.every(sub =>
             Object.values(statsAfter.stats[sub.id] || {}).some(t => t.perfectScoreCount > 0)
         );
         if (hasPerfectInAll) {
@@ -353,17 +354,17 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         if (selectedTopic) {
             const topicStatsAfter = statsAfter.stats[selectedSubject.id]?.[selectedTopic.id];
-            if(topicStatsAfter){
+            if (topicStatsAfter) {
                 if (topicStatsAfter.timesCompleted >= 5) tryAddBadge('persistent_player_5');
                 if (topicStatsAfter.timesCompleted >= 10) tryAddBadge(`topic_veteran_${selectedTopic.id}`);
                 if (topicStatsAfter.perfectScoreCount >= 5) tryAddBadge(`topic_superstar_${selectedTopic.id}`);
                 if (topicStatsAfter.perfectScoreCount >= 10) tryAddBadge(`topic_legend_${selectedTopic.id}`);
             }
         }
-        
+
         const totalBadgesBefore = statsBefore.earnedBadges.length;
         const totalBadgesAfter = statsAfter.earnedBadges.length + currentNewBadges.length;
-        
+
         if (totalBadgesBefore < 20 && totalBadgesAfter >= 20) tryAddBadge('grand_master_20');
         if (totalBadgesBefore < 40 && totalBadgesAfter >= 40) tryAddBadge('collector_40');
         if (totalBadgesBefore < 60 && totalBadgesAfter >= 60) tryAddBadge('collector_60');
@@ -371,7 +372,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (totalBadgesBefore < 100 && totalBadgesAfter >= 100) tryAddBadge('collector_100');
         if (totalBadgesBefore < 120 && totalBadgesAfter >= 120) tryAddBadge('collector_120');
         if (totalBadgesAfter === BADGES.length) tryAddBadge('ultimate_achiever');
-        
+
         currentNewBadges.forEach(badge => user.addBadge(badge.id));
 
         setNewlyEarnedBadges(currentNewBadges);
@@ -380,7 +381,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const handleRestart = () => {
         const inExamMode = (gameState === 'results' || gameState === 'review') && timeLimit > 0;
-        
+
         if (selectedTopic?.id === 'tap_doc_en') {
             setGameState('english_reading_subtopic_selection');
             resetQuizState();
@@ -422,6 +423,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         newlyEarnedBadges,
         examDuration,
         userAnswers,
+        setGameState,
         handleSubjectSelect,
         handleTopicSelect,
         handleEnglishSubTopicSelect,

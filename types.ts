@@ -87,7 +87,7 @@ export interface QuizStats {
   };
 }
 
-export type GameState = 'subject_selection' | 'topic_selection' | 'loading_quiz' | 'in_quiz' | 'results' | 'badge_collection' | 'parents_corner' | 'reading_activity' | 'exam_options' | 'loading_exam' | 'in_exam' | 'writing_activity' | 'review' | 'english_reading_subtopic_selection';
+export type GameState = 'subject_selection' | 'topic_selection' | 'loading_quiz' | 'in_quiz' | 'results' | 'badge_collection' | 'parents_corner' | 'reading_activity' | 'exam_options' | 'loading_exam' | 'in_exam' | 'writing_activity' | 'review' | 'english_reading_subtopic_selection' | 'reward_shop';
 
 export interface ReadingAnalysis {
   accuracy: number;
@@ -138,6 +138,18 @@ export interface MistakeRecord {
   timestamp: number;
 }
 
+// Shop system types
+export type AccessoryType = 'hat' | 'glasses' | 'outfit' | 'background';
+
+export interface ShopItem {
+  id: string;
+  name: string;
+  type: AccessoryType;
+  icon: string; // Emoji hoặc mô tả
+  price: number; // Số sao cần để mua
+  description: string;
+}
+
 export interface UserData {
   earnedBadges: string[];
   stats: QuizStats;
@@ -152,4 +164,9 @@ export interface UserData {
   unlockedThemes: string[];
   // Smart review
   mistakes: MistakeRecord[];
+  avatar?: string; // Avatar của người dùng
+  // Reward shop
+  stars: number; // Điểm sao tích lũy
+  ownedAccessories: string[]; // IDs của phụ kiện đã mua
+  equippedAccessories: { [key in AccessoryType]?: string }; // Phụ kiện đang đeo
 }

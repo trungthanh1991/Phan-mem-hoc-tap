@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useGame } from './contexts/GameContext';
 import SubjectSelection from './components/SubjectSelection';
@@ -12,6 +11,8 @@ import ReadingView from './components/ReadingView';
 import ExamOptionsView from './components/ExamOptionsView';
 import WritingView from './components/WritingView';
 import EnglishReadingSubTopicSelection from './components/EnglishReadingSubTopicSelection';
+import MagicCursor from './components/MagicCursor';
+import RewardShop from './components/RewardShop';
 
 const App: React.FC = () => {
   const { gameState } = useGame();
@@ -45,6 +46,8 @@ const App: React.FC = () => {
         return <BadgeCollectionView />;
       case 'parents_corner':
         return <ParentsCornerView />;
+      case 'reward_shop':
+        return <RewardShop />;
       default:
         return <div>Trạng thái không xác định</div>;
     }
@@ -52,6 +55,7 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 to-indigo-100 p-4">
+      <MagicCursor />
       <main className="w-full max-w-4xl">
         {renderContent()}
       </main>

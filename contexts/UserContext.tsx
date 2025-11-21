@@ -10,6 +10,15 @@ interface UserContextType {
     readingHistory: ReadingRecord[];
     consecutivePlayDays: number;
     perfectScoreStreak: number;
+    avatar: string;
+    setAvatar: (avatar: string) => void;
+    // Shop system
+    stars: number;
+    ownedAccessories: string[];
+    equippedAccessories: { [key: string]: string | undefined };
+    buyAccessory: (itemId: string, price: number) => boolean;
+    equipAccessory: (itemId: string, type: string) => void;
+    earnStars: (amount: number) => void;
     addBadge: (badgeId: string) => void;
     updatePostQuizData: (subjectId: string, topicId: string, score: number, totalQuestions: number) => UserData;
     addReadingRecord: (passage: string, analysis: ReadingAnalysis) => Badge[];
@@ -29,7 +38,14 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         lastPlayDate: '',
         consecutivePlayDays: 0,
         perfectScoreStreak: 0,
-        dailyHistory: { date: '', quizzes: 0, subjects: new Set(), topics: new Set() }
+        dailyHistory: { date: '', quizzes: 0, subjects: new Set(), topics: new Set() },
+        avatar: '👶',
+        currentThemeId: 'default',
+        unlockedThemes: ['default'],
+        mistakes: [],
+        stars: 0,
+        ownedAccessories: [],
+        equippedAccessories: {}
     });
     const [isLoaded, setIsLoaded] = useState(false);
 
@@ -48,15 +64,15 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                         topic.perfectScoreCount = topic.perfectScoreCount ?? 0;
                     });
                 });
-                
+
                 const today = getTodayString();
                 let dailyHistory = data.dailyHistory || { date: '', quizzes: 0, subjects: new Set(), topics: new Set() };
                 // Deserialize Set
                 if (dailyHistory.subjects && !(dailyHistory.subjects instanceof Set)) {
-                   dailyHistory.subjects = new Set(dailyHistory.subjects as any);
+                    dailyHistory.subjects = new Set(dailyHistory.subjects as any);
                 }
                 if (dailyHistory.topics && !(dailyHistory.topics instanceof Set)) {
-                   dailyHistory.topics = new Set(dailyHistory.topics as any);
+                    dailyHistory.topics = new Set(dailyHistory.topics as any);
                 }
 
                 // Reset daily history if it's a new day
@@ -72,10 +88,17 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     lastPlayDate: data.lastPlayDate || '',
                     consecutivePlayDays: data.consecutivePlayDays || 0,
                     perfectScoreStreak: data.perfectScoreStreak || 0,
-                    dailyHistory: dailyHistory
+                    dailyHistory: dailyHistory,
+                    avatar: data.avatar || '👶',
+                    currentThemeId: data.currentThemeId || 'default',
+                    unlockedThemes: data.unlockedThemes || ['default'],
+                    mistakes: data.mistakes || [],
+                    stars: data.stars || 0,
+                    ownedAccessories: data.ownedAccessories || [],
+                    equippedAccessories: data.equippedAccessories || {}
                 });
             } else {
-                 setUserData(prev => ({
+                setUserData(prev => ({
                     ...prev,
                     dailyHistory: { ...prev.dailyHistory, date: getTodayString() }
                 }));
@@ -105,6 +128,10 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     }, [userData, isLoaded]);
 
+    const setAvatar = useCallback((avatar: string) => {
+        setUserData(prev => ({ ...prev, avatar }));
+    }, []);
+
     const addBadge = useCallback((badgeId: string) => {
         setUserData(prev => {
             if (!prev.earnedBadges.includes(badgeId)) {
@@ -128,7 +155,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             topicStats.timesCompleted += 1;
             topicStats.totalCorrect += score;
             topicStats.totalQuestions += totalQuestions;
-            
+
             const isPerfect = score === totalQuestions;
             if (isPerfect) {
                 topicStats.perfectScoreCount += 1;
@@ -154,7 +181,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 newDailyHistory.subjects.add(subjectId);
                 newDailyHistory.topics.add(topicId);
             }
-            
+
             updatedData = {
                 ...prev,
                 stats: newStats,
@@ -171,7 +198,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const addReadingRecord = useCallback((passage: string, analysis: ReadingAnalysis): Badge[] => {
         const newRecord: ReadingRecord = { passage, analysis, timestamp: Date.now() };
         const newlyUnlockedBadges: Badge[] = [];
-        
+
         setUserData(prev => {
             const currentBadges = new Set(prev.earnedBadges);
 
@@ -200,10 +227,10 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 earnedBadges: Array.from(currentBadges),
             };
         });
-        
+
         return newlyUnlockedBadges;
     }, []);
-    
+
     const getWeakestTopicId = (subjectId: string): string | null => {
         const subjectStats = userData.stats[subjectId];
         if (!subjectStats) return null;
@@ -223,17 +250,52 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 weakestTopicId = topicId;
             }
         }
-        
+
         return weakestTopicId;
     };
-    
+
     const getUserData = useCallback(() => userData, [userData]);
 
-    const value = { 
-        ...userData, 
-        addBadge, 
-        updatePostQuizData, 
-        getWeakestTopicId, 
+    // Shop system functions
+    const buyAccessory = useCallback((itemId: string, price: number): boolean => {
+        if (userData.stars < price || userData.ownedAccessories.includes(itemId)) {
+            return false; // Không đủ sao hoặc đã mua rồi
+        }
+        setUserData(prev => ({
+            ...prev,
+            stars: prev.stars - price,
+            ownedAccessories: [...prev.ownedAccessories, itemId]
+        }));
+        return true;
+    }, [userData.stars, userData.ownedAccessories]);
+
+    const equipAccessory = useCallback((itemId: string, type: string) => {
+        if (!userData.ownedAccessories.includes(itemId)) return;
+        setUserData(prev => ({
+            ...prev,
+            equippedAccessories: {
+                ...prev.equippedAccessories,
+                [type]: itemId
+            }
+        }));
+    }, [userData.ownedAccessories]);
+
+    const earnStars = useCallback((amount: number) => {
+        setUserData(prev => ({
+            ...prev,
+            stars: prev.stars + amount
+        }));
+    }, []);
+
+    const value = {
+        ...userData,
+        setAvatar,
+        buyAccessory,
+        equipAccessory,
+        earnStars,
+        addBadge,
+        updatePostQuizData,
+        getWeakestTopicId,
         addReadingRecord,
         getUserData
     };

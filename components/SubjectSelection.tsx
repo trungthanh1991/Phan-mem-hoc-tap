@@ -1,32 +1,49 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { SUBJECTS } from '../constants';
 import { useGame } from '../contexts/GameContext';
 import { useUser } from '../contexts/UserContext';
 import { useSound } from '../contexts/SoundContext';
 import Card from './Card';
 import { MedalIcon, ChartBarIcon, FireIcon, SpeakerWaveIcon, SpeakerQuietIcon } from './icons';
+import AvatarSelector from './AvatarSelector';
 
 const SubjectSelection: React.FC = () => {
-    const { handleSubjectSelect, showBadgeCollection, showParentsCorner } = useGame();
-    const { consecutivePlayDays, stats, earnedBadges } = useUser();
+    const { handleSubjectSelect, showBadgeCollection, showParentsCorner, setGameState } = useGame();
+    const { consecutivePlayDays, stats, earnedBadges, avatar, stars } = useUser();
     const { toggleMute, isMuted } = useSound();
+    const [showAvatarSelector, setShowAvatarSelector] = useState(false);
 
     return (
-        <div className="text-center relative pt-10 px-4">
-            {/* Top Controls */}
-            <div className="absolute top-0 left-0 w-full flex justify-between items-center px-4">
-                {/* Daily Streak - More fun! */}
-                <div className="flex items-center gap-2 bg-gradient-to-r from-orange-400 to-red-500 text-white font-bold py-3 px-5 rounded-full shadow-cartoon transform hover:scale-110 transition-all animate-float">
-                    <FireIcon className="h-7 w-7 animate-bounce-fun" />
-                    <span className="text-lg">🔥 {consecutivePlayDays} ngày</span>
+        <div className="min-h-screen bg-fun-gradient-blue p-4 md:p-8 font-comic relative overflow-hidden">
+            {/* Background decorations */}
+            <div className="absolute top-10 left-10 text-6xl opacity-20 animate-float pointer-events-none">☁️</div>
+            <div className="absolute top-20 right-20 text-6xl opacity-20 animate-float pointer-events-none" style={{ animationDelay: '1s' }}>☁️</div>
+            <div className="absolute bottom-10 left-1/4 text-6xl opacity-20 animate-bounce-fun pointer-events-none">🎈</div>
+
+            {showAvatarSelector && <AvatarSelector onClose={() => setShowAvatarSelector(false)} />}
+
+            <div className="flex justify-between items-center mb-8 relative z-10">
+                <div className="flex gap-3">
+                    {/* Avatar Button */}
+                    <button
+                        onClick={() => setShowAvatarSelector(true)}
+                        className="flex items-center gap-2 bg-white text-gray-800 font-bold py-2 px-4 rounded-full shadow-cartoon hover:shadow-cartoon-hover transition-all transform hover:scale-105"
+                    >
+                        <span className="text-3xl">{avatar}</span>
+                    </button>
+
+                    {/* Daily Streak */}
+                    <div className="flex items-center gap-2 bg-gradient-to-r from-orange-400 to-red-500 text-white font-bold py-2 px-4 rounded-full shadow-cartoon animate-pulse">
+                        <FireIcon className="h-6 w-6 animate-wiggle" />
+                        <span>{consecutivePlayDays} ngày</span>
+                    </div>
                 </div>
 
                 <div className="flex gap-3">
                     {/* Sound Toggle */}
                     <button
                         onClick={toggleMute}
-                        className="flex items-center justify-center bg-white text-primary font-semibold p-3 rounded-full shadow-cartoon hover:shadow-cartoon-hover transition-all transform hover:rotate-12"
+                        className="p-3 bg-white rounded-full shadow-cartoon hover:shadow-cartoon-hover transition-all transform hover:scale-110 text-blue-500"
                         aria-label={isMuted ? "Bật âm thanh" : "Tắt âm thanh"}
                     >
                         {isMuted ? <SpeakerQuietIcon className="h-7 w-7 text-gray-500" /> : <SpeakerWaveIcon className="h-7 w-7" />}
@@ -44,6 +61,22 @@ const SubjectSelection: React.FC = () => {
                         {/* Blinking Badge Count */}
                         <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-black px-2 py-1 rounded-full shadow-lg animate-bounce-fun min-w-[28px] text-center">
                             <span className="animate-pulse">{earnedBadges.length}</span>
+                        </div>
+                    </button>
+
+                    {/* Shop Button */}
+                    <button
+                        onClick={() => setGameState('reward_shop')}
+                        className="relative flex items-center gap-2 bg-gradient-to-r from-amber-400 to-yellow-500 text-white font-bold py-3 px-5 rounded-full shadow-cartoon hover:shadow-cartoon-hover transition-all transform hover:scale-110"
+                        aria-label="Mở cửa hàng"
+                    >
+                        <span className="text-2xl">🛒</span>
+                        <div className="hidden sm:flex flex-col items-start leading-tight">
+                            <span className="text-xs">Cửa Hàng</span>
+                            <div className="flex items-center gap-1">
+                                <span className="text-xl">⭐</span>
+                                <span className="text-sm font-black">{stars}</span>
+                            </div>
                         </div>
                     </button>
                 </div>
