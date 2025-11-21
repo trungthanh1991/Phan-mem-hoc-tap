@@ -28,7 +28,7 @@ export const SpeechProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       loadVoices();
       // Và lắng nghe sự kiện khi danh sách giọng đọc thay đổi hoặc được tải xong
       window.speechSynthesis.addEventListener('voiceschanged', loadVoices);
-      
+
       return () => {
         window.speechSynthesis.removeEventListener('voiceschanged', loadVoices);
         window.speechSynthesis.cancel();
@@ -45,15 +45,15 @@ export const SpeechProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
   const speak = useCallback((text: string, lang: 'vi-VN' | 'en-US' = 'vi-VN') => {
     if (!text) return;
-    
+
     if (isSpeaking && speakingText === text) {
       cancel();
       return;
     }
-    
+
     if (typeof window === 'undefined' || !window.speechSynthesis) {
-        console.error("Web Speech API không được hỗ trợ trên trình duyệt này.");
-        return;
+      console.error("Web Speech API không được hỗ trợ trên trình duyệt này.");
+      return;
     }
 
     if (window.speechSynthesis.speaking) {
@@ -64,20 +64,44 @@ export const SpeechProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     utteranceRef.current = utterance;
 
     utterance.lang = lang;
-    utterance.pitch = 1.2; 
+    utterance.pitch = 1.2;
     utterance.rate = lang === 'en-US' ? 1.0 : 0.9;
     utterance.volume = 1;
 
-    // Tìm giọng đọc phù hợp
-    const preferredVoice = voices.find(voice => voice.lang === lang);
-    if (preferredVoice) {
-      utterance.voice = preferredVoice;
+    // Sử dụng Web Speech API có sẵn của trình duyệt để chọn giọng đọc
+    let selectedVoice: SpeechSynthesisVoice | undefined;
+
+    if (lang === 'vi-VN') {
+      // Tìm giọng Việt Nam từ Web Speech API
+      // Ưu tiên: Google Vietnamese > Microsoft Vietnamese > bất kỳ giọng vi-VN nào
+      selectedVoice = voices.find(v =>
+        v.lang === 'vi-VN' && v.name.toLowerCase().includes('google')
+      ) || voices.find(v =>
+        v.lang === 'vi-VN' && v.name.toLowerCase().includes('microsoft')
+      ) || voices.find(v =>
+        v.lang.startsWith('vi')
+      );
+
+      console.log('🇻🇳 Giọng Việt được chọn:', selectedVoice?.name || 'Mặc định trình duyệt');
+
     } else if (lang === 'en-US') {
-      // Nếu không tìm thấy giọng 'en-US' cụ thể, tìm bất kỳ giọng tiếng Anh nào
-      const anyEnglishVoice = voices.find(v => v.lang.startsWith('en-'));
-      if (anyEnglishVoice) {
-          utterance.voice = anyEnglishVoice;
-      }
+      // Tìm giọng Anh - Ưu tiên giọng nữ UK
+      selectedVoice = voices.find(v =>
+        v.lang === 'en-GB' && v.name.toLowerCase().includes('female')
+      ) || voices.find(v =>
+        v.lang === 'en-GB'
+      ) || voices.find(v =>
+        v.lang === 'en-US' && v.name.toLowerCase().includes('female')
+      ) || voices.find(v =>
+        v.lang.startsWith('en')
+      );
+
+      console.log('🇬🇧 Giọng Anh được chọn:', selectedVoice?.name || 'Mặc định trình duyệt');
+    }
+
+    // Áp dụng giọng đọc đã chọn
+    if (selectedVoice) {
+      utterance.voice = selectedVoice;
     }
 
     utterance.onstart = () => {

@@ -62,8 +62,8 @@ export interface Topic {
 }
 
 export interface SubTopic {
-    id: string;
-    name: string;
+  id: string;
+  name: string;
 }
 
 export interface Badge {
@@ -113,13 +113,43 @@ export interface ReadingRecord {
   timestamp: number;
 }
 
+export interface Theme {
+  id: string;
+  name: string;
+  description: string;
+  unlockRequirement: string; // Badge ID hoặc điều kiện để unlock
+  isUnlocked: boolean;
+  colors: {
+    primary: string;
+    secondary: string;
+    accent: string;
+    background: string;
+    gradient: { from: string; to: string };
+  };
+  mascotImage?: string; // URL hoặc path đến mascot
+  backgroundPattern?: string;
+}
+
+export interface MistakeRecord {
+  question: Question;
+  userAnswer: string;
+  subjectId: string;
+  topicId: string;
+  timestamp: number;
+}
+
 export interface UserData {
-    earnedBadges: string[];
-    stats: QuizStats;
-    readingHistory: ReadingRecord[];
-    // Các trường mới để theo dõi tiến trình
-    lastPlayDate: string; // Định dạng 'YYYY-MM-DD'
-    consecutivePlayDays: number;
-    perfectScoreStreak: number; // Chuỗi điểm tuyệt đối trên các bài quiz
-    dailyHistory: { date: string; quizzes: number; subjects: Set<string>; topics: Set<string> };
+  earnedBadges: string[];
+  stats: QuizStats;
+  readingHistory: ReadingRecord[];
+  // Các trường mới để theo dõi tiến trình
+  lastPlayDate: string; // Định dạng 'YYYY-MM-DD'
+  consecutivePlayDays: number;
+  perfectScoreStreak: number; // Chuỗi điểm tuyệt đối trên các bài quiz
+  dailyHistory: { date: string; quizzes: number; subjects: Set<string>; topics: Set<string> };
+  // Theme customization
+  currentThemeId: string;
+  unlockedThemes: string[];
+  // Smart review
+  mistakes: MistakeRecord[];
 }
