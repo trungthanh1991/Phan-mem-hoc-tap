@@ -10,12 +10,12 @@ interface CardProps extends Omit<React.HTMLAttributes<HTMLElement>, 'onClick'> {
 }
 
 const Card: React.FC<CardProps> = ({ children, className = '', onClick, ...props }) => {
-  const baseClasses = 'p-6 rounded-2xl shadow-lg transition-all duration-300';
+  const baseClasses = 'p-6 rounded-3xl shadow-cartoon transition-all duration-300';
   const combinedClasses = `${baseClasses} ${className}`;
 
   if (onClick) {
     return (
-      <button onClick={onClick} className={`text-left w-full ${combinedClasses}`} {...props}>
+      <button onClick={onClick} className={`text-left w-full ${combinedClasses} shadow-cartoon-hover active:scale-95`} {...props}>
         {children}
       </button>
     );

@@ -45,11 +45,39 @@
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
     <style>
       body {
-        font-family: 'Montserrat', sans-serif;
+        font-family: 'Fredoka', 'Comic Neue', sans-serif;
       }
+      
+      /* Fun bouncing animation */
+      @keyframes bounce-fun {
+        0%, 100% { transform: translateY(0) scale(1); }
+        50% { transform: translateY(-10px) scale(1.05); }
+      }
+      
+      /* Wiggle animation */
+      @keyframes wiggle {
+        0%, 100% { transform: rotate(0deg); }
+        25% { transform: rotate(-5deg); }
+        75% { transform: rotate(5deg); }
+      }
+      
+      /* Float animation */
+      @keyframes float {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-15px); }
+      }
+      
+      /* Rainbow pulse */
+      @keyframes rainbow-pulse {
+        0% { box-shadow: 0 0 20px rgba(255, 99, 132, 0.5); }
+        33% { box-shadow: 0 0 20px rgba(54, 162, 235, 0.5); }
+        66% { box-shadow: 0 0 20px rgba(255, 206, 86, 0.5); }
+        100% { box-shadow: 0 0 20px rgba(255, 99, 132, 0.5); }
+      }
+      
       @keyframes sparkle-anim {
         0% {
           transform: scale(0) rotate(0deg);
@@ -83,8 +111,52 @@
           transform: translateY(0);
         }
       }
+      
       .animate-fade-in-up {
         animation: fade-in-up 0.5s ease-out forwards;
+      }
+      
+      .animate-bounce-fun {
+        animation: bounce-fun 1s ease-in-out infinite;
+      }
+      
+      .animate-wiggle {
+        animation: wiggle 0.5s ease-in-out;
+      }
+      
+      .animate-float {
+        animation: float 3s ease-in-out infinite;
+      }
+      
+      .animate-rainbow-pulse {
+        animation: rainbow-pulse 3s ease-in-out infinite;
+      }
+      
+      /* Fun gradient backgrounds */
+      .bg-fun-gradient-1 {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      }
+      
+      .bg-fun-gradient-2 {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      }
+      
+      .bg-fun-gradient-3 {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      }
+      
+      .bg-fun-gradient-4 {
+        background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+      }
+      
+      /* Cute cartoon-style shadows */
+      .shadow-cartoon {
+        box-shadow: 8px 8px 0px rgba(0, 0, 0, 0.1);
+      }
+      
+      .shadow-cartoon-hover:hover {
+        box-shadow: 12px 12px 0px rgba(0, 0, 0, 0.15);
+        transform: translate(-2px, -2px);
       }
     </style>
   <script type="importmap">

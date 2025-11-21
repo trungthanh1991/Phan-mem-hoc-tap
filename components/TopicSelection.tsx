@@ -26,125 +26,173 @@ const TopicSelection: React.FC = () => {
 
     const bgStyle = hasBgImage
         ? {
-              backgroundImage: `url(${selectedSubject.backgroundImage})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              backgroundRepeat: 'no-repeat'
-          }
+            backgroundImage: `url(${selectedSubject.backgroundImage})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat'
+        }
         : {};
 
     // Lấy thống kê cho môn học hiện tại
     const currentSubjectStats = stats[selectedSubject.id] || {};
 
+    // Topic emojis mapping
+    const topicEmojis: { [key: string]: string } = {
+        'Cộng trừ trong phạm vi 1000': '➕➖',
+        'Nhân chia trong bảng 2-10': '✖️➗',
+        'Hình học cơ bản': '📐',
+        'Xem đồng hồ': '⏰',
+        'Giải toán có lời văn': '📝',
+        'Đo lường (mét, gam)': '📏',
+        'So sánh (lớn hơn, nhỏ hơn, bằng)': '⚖️',
+
+        // Tiếng Việt
+        'Từ vựng': '📖',
+        'Ngữ pháp cơ bản': '✏️',
+        'Đọc hiểu đoạn văn ngắn': '📚',
+        'Viết câu đơn giản': '✍️',
+        'Luyện đọc': '🗣️',
+        'Luyện viết': '📝',
+
+        // Tự nhiên & Xã hội
+        'Con vật': '🐾',
+        'Cây cối': '🌳',
+        'Gia đình và bạn bè': '👨‍👩‍👧‍👦',
+        'Môi trường xung quanh': '🏡',
+
+        // Tiếng Anh
+        'Alphabet': '🔤',
+        'Numbers (1-20)': '🔢',
+        'Colors': '🎨',
+        'Family': '👪',
+        'Animals': '🐶',
+        'Food & Drinks': '🍎',
+        'Tập đọc': '📖',
+        'Nghe đọc': '👂'
+    };
+
     return (
         <div
-            className="text-center min-h-screen w-full py-6 px-4 relative"
+            className="text-center min-h-screen w-full py-8 px-4 relative"
             style={bgStyle}
         >
             {hasBgImage && (
-                <div className="absolute inset-0 bg-white/40 backdrop-blur-[2px] z-0"></div>
+                <div className="absolute inset-0 bg-white/50 backdrop-blur-sm z-0"></div>
             )}
 
-            <div className="relative z-10 bg-transparent">
-                
+            <div className="relative z-10 bg-transparent max-w-7xl mx-auto">
+
                 <button
                     onClick={handleBackToSubjects}
-                    className="text-primary hover:underline mb-6 font-medium bg-white/60 px-3 py-1 rounded-full"
+                    className="text-white bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 font-bold px-6 py-3 rounded-full shadow-cartoon hover:shadow-cartoon-hover transform hover:scale-105 transition-all mb-6"
                 >
-                    &larr; Quay lại chọn môn học
+                    ⬅️ Quay lại chọn môn
                 </button>
 
-                <h2 className="text-3xl md:text-4xl font-bold text-secondary-dark mb-2 drop-shadow-sm">
-                    Môn {selectedSubject.name}
-                </h2>
+                <div className="mb-8">
+                    <h2 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 bg-clip-text text-transparent mb-3 animate-float">
+                        📚 {selectedSubject.name}
+                    </h2>
 
-                <p className="text-lg text-secondary mb-8 font-medium">
-                    Bé muốn ôn tập về chủ đề nào?
-                </p>
+                    <p className="text-2xl text-gray-700 font-semibold">
+                        🤔 Bé muốn ôn tập chủ đề nào nhỉ?
+                    </p>
+                </div>
 
                 {recommendedTopicId && (
                     <Card
-                        className="bg-blue-100 border border-primary text-primary-dark text-left px-4 py-3 mb-6 flex items-center gap-3 animate-fade-in-up shadow-lg"
+                        className="bg-gradient-to-r from-blue-400 to-cyan-400 border-4 border-blue-500 text-white text-left px-6 py-4 mb-8 flex items-center gap-4 animate-bounce-fun max-w-2xl mx-auto"
                         role="alert"
                     >
-                        <span className="text-2xl animate-bounce">💡</span>
-                        <span className="font-semibold">
-                            Bé nên luyện thêm chủ đề được gợi ý bên dưới nhé!
-                        </span>
+                        <span className="text-4xl animate-wiggle">💡</span>
+                        <div>
+                            <p className="font-bold text-lg">🎯 GỢI Ý CHO BÉ!</p>
+                            <span className="font-semibold text-base">
+                                Bé nên luyện thêm chủ đề được đánh dấu ⭐ bên dưới nhé!
+                            </span>
+                        </div>
                     </Card>
                 )}
 
                 {error && (
                     <Card
-                        className="bg-danger-light border border-danger text-danger-dark text-left px-4 py-3 mb-6"
+                        className="bg-red-100 border-4 border-red-500 text-red-800 text-left px-6 py-4 mb-8 font-bold"
                         role="alert"
                     >
-                        {error}
+                        ⚠️ {error}
                     </Card>
                 )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {TOPICS[selectedSubject.id].map((topic) => {
+                    {TOPICS[selectedSubject.id].map((topic, index) => {
                         const isRecommended = topic.id === recommendedTopicId;
                         const topicStat = currentSubjectStats[topic.id];
-                        
-                        // Tính toán tiến độ (dựa trên số câu đúng / tổng số câu đã làm, hoặc chỉ đơn giản là số lần hoàn thành)
-                        // Ở đây ta dùng tỉ lệ đúng * số lượng bài đã làm để tạo cảm giác "thông thạo"
-                        // Max bar = 100% nếu làm đúng > 50 câu tích lũy
+
                         const totalCorrect = topicStat?.totalCorrect || 0;
                         const masteryLevel = Math.min((totalCorrect / 50) * 100, 100);
-                        
+
                         const isMastered = masteryLevel >= 100;
+                        const emoji = topicEmojis[topic.name] || '📚';
 
                         return (
                             <Card
                                 key={topic.id}
                                 onClick={() => handleTopicSelect(topic)}
-                                className={`relative flex flex-col justify-between text-secondary-dark text-xl font-medium border-2 hover:shadow-xl transform hover:scale-105 transition-all duration-300 ${selectedSubject.lightBgColor} ${selectedSubject.borderColor} hover:bg-white ${
-                                    isRecommended ? 'ring-4 ring-offset-2 ring-primary' : ''
-                                }`}
+                                className={`relative flex flex-col justify-between text-gray-800 text-lg font-bold bg-white hover:bg-gradient-to-br from-white to-blue-50 transform hover:scale-110 hover:-translate-y-2 transition-all duration-300 min-h-[180px] ${isRecommended ? 'ring-4 ring-offset-4 ring-yellow-400 animate-pulse' : ''
+                                    }`}
+                                style={{
+                                    animationDelay: `${index * 0.05}s`
+                                }}
                             >
                                 {isRecommended && (
-                                    <div className="absolute -top-3 -right-3 bg-primary text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg z-20 animate-pulse">
-                                        GỢI Ý
+                                    <div className="absolute -top-4 -right-4 bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-sm font-black px-4 py-2 rounded-full shadow-cartoon z-20 animate-bounce-fun">
+                                        ⭐ GỢI Ý
                                     </div>
                                 )}
                                 {isMastered && (
-                                    <div className="absolute -top-2 -left-2 text-yellow-500 z-20 drop-shadow-md">
-                                        <StarIcon className="h-8 w-8 fill-current" />
+                                    <div className="absolute -top-3 -left-3 text-yellow-400 z-20 drop-shadow-lg animate-wiggle">
+                                        <StarIcon className="h-10 w-10 fill-current" />
                                     </div>
                                 )}
 
-                                <div className="mb-4 z-10 relative">
+                                {/* Emoji badge */}
+                                <div className="text-5xl mb-3 animate-float">
+                                    {emoji}
+                                </div>
+
+                                <div className="mb-4 z-10 relative leading-tight">
                                     {topic.name}
                                 </div>
 
                                 {/* Progress Bar */}
-                                <div className="w-full bg-white/50 rounded-full h-2.5 mt-2 overflow-hidden border border-gray-200/50">
-                                    <div 
-                                        className={`h-2.5 rounded-full transition-all duration-1000 ${isMastered ? 'bg-yellow-400' : selectedSubject.baseColor}`} 
+                                <div className="w-full bg-gray-200 rounded-full h-3 mt-auto overflow-hidden border-2 border-gray-300">
+                                    <div
+                                        className={`h-3 rounded-full transition-all duration-1000 ${isMastered ? 'bg-gradient-to-r from-yellow-400 to-orange-500 animate-pulse' : 'bg-gradient-to-r from-green-400 to-blue-500'}`}
                                         style={{ width: `${masteryLevel}%` }}
                                     ></div>
                                 </div>
-                                <div className="text-xs text-right mt-1 text-secondary/70 font-normal">
-                                    {totalCorrect} câu đúng
+                                <div className="text-sm text-right mt-2 text-gray-600 font-semibold">
+                                    ✅ {totalCorrect} câu đúng
                                 </div>
                             </Card>
                         );
                     })}
                 </div>
 
-                <div className="mt-8 border-t-2 border-dashed border-gray-300 pt-8">
-                    <h3 className="text-2xl font-bold text-secondary-dark mb-4">
-                        Hoặc thử sức với...
+                <div className="mt-12 border-t-4 border-dashed border-purple-300 pt-8">
+                    <h3 className="text-3xl font-bold text-purple-700 mb-6 animate-bounce-fun">
+                        🎯 Hoặc thử sức với...
                     </h3>
 
                     <Card
                         onClick={handleStartExam}
-                        className="flex items-center justify-center gap-4 text-secondary-dark text-xl font-medium border-2 hover:shadow-xl transform hover:scale-105 bg-indigo-100 border-indigo-500 hover:bg-white max-w-sm mx-auto transition-all duration-300"
+                        className="flex flex-col md:flex-row items-center justify-center gap-4 text-white text-2xl font-black bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 hover:from-purple-700 hover:via-pink-700 hover:to-red-700 transform hover:scale-110 max-w-md mx-auto transition-all duration-300 py-8 animate-rainbow-pulse"
                     >
-                        <ClockIcon className="h-8 w-8 text-indigo-600 animate-spin-slow" />
-                        <span>Bài Thi Thử Tổng Hợp</span>
+                        <ClockIcon className="h-12 w-12 animate-bounce-fun" />
+                        <div>
+                            <div>⏱️ Bài Thi Thử</div>
+                            <div className="text-lg font-semibold">Tổng Hợp Kiến Thức</div>
+                        </div>
                     </Card>
                 </div>
             </div>
