@@ -277,28 +277,66 @@ export const BADGES: Badge[] = [
 // Reward Shop Items
 
 export const SHOP_ITEMS: ShopItem[] = [
-  // Hats
-  { id: 'hat_crown', name: 'Vương Miện Vàng', type: 'hat', icon: '👑', price: 100, description: 'Vương miện của hoàng gia!' },
-  { id: 'hat_wizard', name: 'Mũ Phù Thủy', type: 'hat', icon: '🧙', price: 80, description: 'Ma thuật thần kỳ!' },
-  { id: 'hat_party', name: 'Nón Tiệc', type: 'hat', icon: '🎉', price: 50, description: 'Cùng ăn mừng nào!' },
-  { id: 'hat_pirate', name: 'Mũ Cướp Biển', type: 'hat', icon: '🏴‍☠️', price: 70, description: 'Ahoy! Thuyền trưởng đây!' },
-  { id: 'hat_detective', name: 'Mũ Thám Tử', type: 'hat', icon: '🕵️', price: 60, description: 'Sherlock Holmes nhí!' },
+  // === MŨ / HATS ===
+  { id: 'hat_crown', name: 'Vương Miện Vàng', type: 'hat', icon: '👑', price: 200, description: 'Vương miện của hoàng gia!' },
+  { id: 'hat_wizard', name: 'Mũ Phù Thủy', type: 'hat', icon: '🧙', price: 160, description: 'Ma thuật thần kỳ!' },
+  { id: 'hat_party', name: 'Nón Tiệc', type: 'hat', icon: '🎉', price: 100, description: 'Cùng ăn mừng nào!' },
+  { id: 'hat_pirate', name: 'Mũ Cướp Biển', type: 'hat', icon: '🏴‍☠️', price: 140, description: 'Ahoy! Thuyền trưởng đây!' },
+  { id: 'hat_detective', name: 'Mũ Thám Tử', type: 'hat', icon: '🕵️', price: 120, description: 'Sherlock Holmes nhí!' },
+  { id: 'hat_santa', name: 'Mũ Ông Già Noel', type: 'hat', icon: '🎅', price: 150, description: 'Ho ho ho! Giáng sinh vui vẻ!' },
+  { id: 'hat_cowboy', name: 'Mũ Cao Bồi', type: 'hat', icon: '🤠', price: 130, description: 'Yeehaw! Miền Tây hoang dã!' },
+  { id: 'hat_graduate', name: 'Mũ Tốt Nghiệp', type: 'hat', icon: '🎓', price: 180, description: 'Học giả tài năng!' },
+  { id: 'hat_ninja', name: 'Mũ Ninja', type: 'hat', icon: '🥷', price: 170, description: 'Im lặng như ninja!' },
+  { id: 'hat_chef', name: 'Mũ Đầu Bếp', type: 'hat', icon: '👨‍🍳', price: 110, description: 'Bếp trưởng đẳng cấp!' },
 
-  // Glasses
-  { id: 'glasses_cool', name: 'Kính Ngầu', type: 'glasses', icon: '😎', price: 40, description: 'Trông thật cool!' },
-  { id: 'glasses_nerd', name: 'Kính Học Giả', type: 'glasses', icon: '🤓', price: 50, description: 'Thông minh hơn 200 IQ!' },
-  { id: 'glasses_star', name: 'Kính Ngôi Sao', type: 'glasses', icon: '⭐', price: 60, description: 'Sáng như ngôi sao!' },
-  { id: 'glasses_heart', name: 'Kính Trái Tim', type: 'glasses', icon: '💕', price: 55, description: 'Yêu đời yêu học!' },
+  // === KÍNH / GLASSES ===
+  { id: 'glasses_cool', name: 'Kính Ngầu', type: 'glasses', icon: '😎', price: 80, description: 'Trông thật cool!' },
+  { id: 'glasses_nerd', name: 'Kính Học Giả', type: 'glasses', icon: '🤓', price: 100, description: 'Thông minh hơn 200 IQ!' },
+  { id: 'glasses_star', name: 'Kính Ngôi Sao', type: 'glasses', icon: '⭐', price: 120, description: 'Sáng như ngôi sao!' },
+  { id: 'glasses_heart', name: 'Kính Trái Tim', type: 'glasses', icon: '💕', price: 110, description: 'Yêu đời yêu học!' },
+  { id: 'glasses_3d', name: 'Kính 3D', type: 'glasses', icon: '🕶️', price: 90, description: 'Xem phim cực đỉnh!' },
+  { id: 'glasses_monocle', name: 'Kính Đơn', type: 'glasses', icon: '🧐', price: 130, description: 'Quý tộc lịch lãm!' },
 
-  // Outfits
-  { id: 'outfit_superhero', name: 'Áo Siêu Anh Hùng', type: 'outfit', icon: '🦸', price: 120, description: 'Sức mạnh vô biên!' },
-  { id: 'outfit_scientist', name: 'Áo Khoa Học Gia', type: 'outfit', icon: '🔬', price: 90, description: 'Khám phá tri thức!' },
-  { id: 'outfit_artist', name: 'Áo Nghệ Sĩ', type: 'outfit', icon: '🎨', price: 80, description: 'Sáng tạo nghệ thuật!' },
-  { id: 'outfit_chef', name: 'Áo Đầu Bếp', type: 'outfit', icon: '👨‍🍳', price: 85, description: 'Nấu ăn siêu đẳng!' },
+  // === TRANG PHỤC / OUTFITS ===
+  { id: 'outfit_superhero', name: 'Áo Siêu Anh Hùng', type: 'outfit', icon: '🦸', price: 240, description: 'Sức mạnh vô biên!' },
+  { id: 'outfit_scientist', name: 'Áo Khoa Học Gia', type: 'outfit', icon: '🔬', price: 180, description: 'Khám phá tri thức!' },
+  { id: 'outfit_artist', name: 'Áo Nghệ Sĩ', type: 'outfit', icon: '🎨', price: 160, description: 'Sáng tạo nghệ thuật!' },
+  { id: 'outfit_chef', name: 'Áo Đầu Bếp', type: 'outfit', icon: '👨‍🍳', price: 170, description: 'Nấu ăn siêu đẳng!' },
+  { id: 'outfit_doctor', name: 'Áo Bác Sĩ', type: 'outfit', icon: '👨‍⚕️', price: 200, description: 'Chữa bệnh cứu người!' },
+  { id: 'outfit_astronaut', name: 'Áo Phi Hành Gia', type: 'outfit', icon: '👨‍🚀', price: 250, description: 'Bay lên vũ trụ!' },
+  { id: 'outfit_police', name: 'Áo Cảnh Sát', type: 'outfit', icon: '👮', price: 190, description: 'Bảo vệ an ninh!' },
+  { id: 'outfit_firefighter', name: 'Áo Lính Cứu Hỏa', type: 'outfit', icon: '👨‍🚒', price: 210, description: 'Dũng cảm chữa cháy!' },
+  { id: 'outfit_pilot', name: 'Áo Phi Công', type: 'outfit', icon: '👨‍✈️', price: 220, description: 'Bay cao bay xa!' },
+  { id: 'outfit_ninja', name: 'Áo Ninja', type: 'outfit', icon: '🥷', price: 230, description: 'Lén lút bí mật!' },
+  { id: 'outfit_wizard', name: 'Áo Phù Thủy', type: 'outfit', icon: '🧙', price: 240, description: 'Phép thuật huyền bí!' },
+  { id: 'outfit_vampire', name: 'Áo Ma Cà Rồng', type: 'outfit', icon: '🧛', price: 260, description: 'Bí ẩn đêm tối!' },
 
-  // Backgrounds
-  { id: 'bg_rainbow', name: 'Cầu Vồng', type: 'background', icon: '🌈', price: 150, description: 'Rực rỡ sắc màu!' },
-  { id: 'bg_stars', name: 'Bầu Trời Sao', type: 'background', icon: '✨', price: 130, description: 'Lấp lánh như sao!' },
-  { id: 'bg_forest', name: 'Rừng Xanh', type: 'background', icon: '🌲', price: 110, description: 'Thiên nhiên tươi mát!' },
-  { id: 'bg_ocean', name: 'Đại Dương', type: 'background', icon: '🌊', price: 120, description: 'Biển xanh mênh mông!' },
+  // === PHÔNG NẾN / BACKGROUNDS ===
+  // Thiên nhiên
+  { id: 'bg_rainbow', name: 'Cầu Vồng', type: 'background', icon: '🌈', price: 300, description: 'Rực rỡ sắc màu!' },
+  { id: 'bg_stars', name: 'Bầu Trời Sao', type: 'background', icon: '✨', price: 260, description: 'Lấp lánh như sao!' },
+  { id: 'bg_forest', name: 'Rừng Xanh', type: 'background', icon: '🌲', price: 220, description: 'Thiên nhiên tươi mát!' },
+  { id: 'bg_ocean', name: 'Đại Dương', type: 'background', icon: '🌊', price: 240, description: 'Biển xanh mênh mông!' },
+  { id: 'bg_sunset', name: 'Hoàng Hôn', type: 'background', icon: '🌅', price: 280, description: 'Lãng mạn hoàng hôn!' },
+  { id: 'bg_galaxy', name: 'Ngân Hà', type: 'background', icon: '🌌', price: 320, description: 'Vũ trụ bao la!' },
+  { id: 'bg_volcano', name: 'Núi Lửa', type: 'background', icon: '🌋', price: 290, description: 'Nóng bỏng phun trào!' },
+  { id: 'bg_snow', name: 'Tuyết Rơi', type: 'background', icon: '❄️', price: 270, description: 'Lạnh giá mùa đông!' },
+  { id: 'bg_sakura', name: 'Hoa Anh Đào', type: 'background', icon: '🌸', price: 310, description: 'Lãng mạn mùa xuân!' },
+  { id: 'bg_desert', name: 'Sa Mạc', type: 'background', icon: '🏜️', price: 250, description: 'Khô cằn cát vàng!' },
+
+  // Xe cộ & Giao thông
+  { id: 'bg_racecar', name: 'Xe Đua F1', type: 'background', icon: '🏎️', price: 350, description: 'Tốc độ kinh hoàng!' },
+  { id: 'bg_police_car', name: 'Xe Cảnh Sát', type: 'background', icon: '🚓', price: 280, description: 'Nee naw nee naw!' },
+  { id: 'bg_fire_truck', name: 'Xe Cứu Hỏa', type: 'background', icon: '🚒', price: 290, description: 'Anh hùng cứu hỏa!' },
+  { id: 'bg_ambulance', name: 'Xe Cứu Thương', type: 'background', icon: '🚑', price: 270, description: 'Cấp cứu khẩn cấp!' },
+  { id: 'bg_taxi', name: 'Xe Taxi', type: 'background', icon: '🚕', price: 240, description: 'Đi chơi nào!' },
+  { id: 'bg_bus', name: 'Xe Buýt', type: 'background', icon: '🚌', price: 260, description: 'Đi học cùng nhau!' },
+  { id: 'bg_truck', name: 'Xe Tải', type: 'background', icon: '🚚', price: 250, description: 'Chở hàng nặng!' },
+  { id: 'bg_tractor', name: 'Xe Kéo Nông Nghiệp', type: 'background', icon: '🚜', price: 230, description: 'Làm ruộng vui vẻ!' },
+  { id: 'bg_metro', name: 'Tàu Điện Ngầm', type: 'background', icon: '🚇', price: 300, description: 'Nhanh như chớp!' },
+  { id: 'bg_train', name: 'Tàu Hỏa', type: 'background', icon: '🚂', price: 310, description: 'Choo choo!' },
+  { id: 'bg_airplane', name: 'Máy Bay', type: 'background', icon: '✈️', price: 340, description: 'Bay trên mây!' },
+  { id: 'bg_helicopter', name: 'Trực Thăng', type: 'background', icon: '🚁', price: 330, description: 'Bay lượn tự do!' },
+  { id: 'bg_rocket', name: 'Tên Lửa', type: 'background', icon: '🚀', price: 380, description: 'Bay lên vũ trụ!' },
+  { id: 'bg_ufo', name: 'UFO Người Ngoài Hành Tinh', type: 'background', icon: '🛸', price: 360, description: 'Bí ẩn vũ trụ!' },
 ];
