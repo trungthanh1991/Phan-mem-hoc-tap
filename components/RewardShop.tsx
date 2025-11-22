@@ -5,6 +5,7 @@ import { useSound } from '../contexts/SoundContext';
 import { SHOP_ITEMS } from '../constants';
 import Card from './Card';
 import Button from './Button';
+import Mascot from './Mascot';
 import { ShopItem, AccessoryType } from '../types';
 
 const RewardShop: React.FC = () => {
@@ -63,6 +64,13 @@ const RewardShop: React.FC = () => {
                     🛒 Cửa Hàng Đổi Quà
                 </h1>
                 <p className="text-lg text-gray-600 font-medium">Trang trí cho bạn Cú Mèo thông thái!</p>
+
+                {/* Mascot Preview */}
+                <div className="mt-6 flex justify-center">
+                    <div className="bg-blue-50 p-6 rounded-full border-4 border-blue-200 shadow-inner">
+                        <Mascot emotion="happy" size={160} />
+                    </div>
+                </div>
             </div>
 
             {/* Stars Display */}

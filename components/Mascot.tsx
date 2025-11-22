@@ -1,6 +1,8 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { useSound } from '../contexts/SoundContext';
+import { useUser } from '../contexts/UserContext';
+import { SHOP_ITEMS } from '../constants';
 
 export type MascotEmotion = 'idle' | 'thinking' | 'happy' | 'sad';
 
@@ -28,6 +30,7 @@ const Mascot: React.FC<MascotProps> = ({ emotion, className = '', size = 120 }) 
   const [message, setMessage] = useState<string | null>(null);
   const [isJumping, setIsJumping] = useState(false);
   const { playSound } = useSound();
+  const { equippedAccessories } = useUser();
 
   // Hiệu ứng chớp mắt tự động
   useEffect(() => {
@@ -62,6 +65,19 @@ const Mascot: React.FC<MascotProps> = ({ emotion, className = '', size = 120 }) 
     showRandomMessage();
     setTimeout(() => setIsJumping(false), 500);
   };
+
+  // Get accessory icons
+  const getAccessoryIcon = (type: string) => {
+    const id = equippedAccessories[type];
+    if (!id) return null;
+    const item = SHOP_ITEMS.find(i => i.id === id);
+    return item ? item.icon : null;
+  };
+
+  const hatIcon = getAccessoryIcon('hat');
+  const glassesIcon = getAccessoryIcon('glasses');
+  const outfitIcon = getAccessoryIcon('outfit');
+  const bgIcon = getAccessoryIcon('background');
 
   // Màu sắc
   const bodyColor = '#3b82f6'; // Blue-500
@@ -100,6 +116,13 @@ const Mascot: React.FC<MascotProps> = ({ emotion, className = '', size = 120 }) 
         `}
       </style>
 
+      {/* Background Accessory */}
+      {bgIcon && (
+        <div className="absolute inset-0 flex items-center justify-center opacity-20 text-8xl -z-10 pointer-events-none select-none">
+          {bgIcon}
+        </div>
+      )}
+
       {/* Speech Bubble */}
       {message && (
         <div className="absolute -top-16 left-1/2 transform -translate-x-1/2 bg-white border-2 border-blue-500 text-blue-800 px-4 py-2 rounded-2xl shadow-lg whitespace-nowrap z-50 animate-fade-in-up">
@@ -108,94 +131,117 @@ const Mascot: React.FC<MascotProps> = ({ emotion, className = '', size = 120 }) 
         </div>
       )}
 
-      <svg
-        viewBox="0 0 200 200"
-        xmlns="http://www.w3.org/2000/svg"
-        className={`w-full h-full drop-shadow-xl transition-all duration-500 cursor-pointer ${animationClass}`}
-        onClick={handleClick}
-      >
-        {/* Chân */}
-        <path d="M70 170 L60 190 L80 190 Z" fill={feetColor} />
-        <path d="M130 170 L120 190 L140 190 Z" fill={feetColor} />
-
-        {/* Thân */}
-        <ellipse cx="100" cy="110" rx="70" ry="80" fill={bodyColor} />
-
-        {/* Tai */}
-        <path d="M40 60 L30 30 L70 50 Z" fill={bodyColor} />
-        <path d="M160 60 L170 30 L130 50 Z" fill={bodyColor} />
-
-        {/* Bụng */}
-        <ellipse cx="100" cy="130" rx="45" ry="50" fill={bellyColor} />
-
-        {/* Họa tiết lông bụng */}
-        <path d="M80 110 Q100 120 120 110" stroke={bodyColor} strokeWidth="3" fill="none" opacity="0.5" />
-        <path d="M80 130 Q100 140 120 130" stroke={bodyColor} strokeWidth="3" fill="none" opacity="0.5" />
-        <path d="M90 150 Q100 155 110 150" stroke={bodyColor} strokeWidth="3" fill="none" opacity="0.5" />
-
-        {/* Mắt (Tròng trắng) */}
-        <circle cx="70" cy="80" r="25" fill="white" stroke={bodyColor} strokeWidth="2" />
-        <circle cx="130" cy="80" r="25" fill="white" stroke={bodyColor} strokeWidth="2" />
-
-        {/* Con ngươi (Thay đổi theo cảm xúc) */}
-        {emotion === 'happy' ? (
-          // Mắt cười ^^
-          <>
-            <path d="M55 80 Q70 65 85 80" stroke="#1e3a8a" strokeWidth="4" fill="none" />
-            <path d="M115 80 Q130 65 145 80" stroke="#1e3a8a" strokeWidth="4" fill="none" />
-          </>
-        ) : emotion === 'sad' ? (
-          // Mắt buồn --
-          <>
-            <circle cx="70" cy="85" r="5" fill="#1e3a8a" />
-            <circle cx="130" cy="85" r="5" fill="#1e3a8a" />
-            {/* Mí mắt sụp xuống */}
-            <path d="M45 65 Q70 85 95 65" fill={bodyColor} opacity="0.3" />
-            <path d="M105 65 Q130 85 155 65" fill={bodyColor} opacity="0.3" />
-          </>
-        ) : blink ? (
-          // Nhắm mắt
-          <>
-            <line x1="50" y1="80" x2="90" y2="80" stroke="#1e3a8a" strokeWidth="4" />
-            <line x1="110" y1="80" x2="150" y2="80" stroke="#1e3a8a" strokeWidth="4" />
-          </>
-        ) : (
-          // Mở mắt bình thường
-          <>
-            <circle cx="70" cy="80" r={emotion === 'thinking' ? 8 : 10} fill="#1e3a8a">
-              {emotion === 'thinking' && (
-                <animate attributeName="cy" values="80;75;80" dur="1s" repeatCount="indefinite" />
-              )}
-            </circle>
-            <circle cx="130" cy="80" r={emotion === 'thinking' ? 8 : 10} fill="#1e3a8a">
-              {emotion === 'thinking' && (
-                <animate attributeName="cy" values="80;75;80" dur="1s" repeatCount="indefinite" begin="0.1s" />
-              )}
-            </circle>
-            <circle cx="75" cy="75" r="3" fill="white" />
-            <circle cx="135" cy="75" r="3" fill="white" />
-          </>
+      <div className="relative w-full h-full">
+        {/* Hat Accessory */}
+        {hatIcon && (
+          <div className="absolute -top-[15%] left-1/2 transform -translate-x-1/2 text-5xl z-20 pointer-events-none select-none drop-shadow-md" style={{ fontSize: size * 0.4 }}>
+            {hatIcon}
+          </div>
         )}
 
-        {/* Mỏ */}
-        <path d="M90 100 L110 100 L100 115 Z" fill={beakColor} />
-
-        {/* Cánh */}
-        {emotion === 'happy' || isJumping ? (
-          // Cánh giơ lên
-          <>
-            <path d="M30 120 Q10 90 30 80" stroke={bodyColor} strokeWidth="10" strokeLinecap="round" fill="none" />
-            <path d="M170 120 Q190 90 170 80" stroke={bodyColor} strokeWidth="10" strokeLinecap="round" fill="none" />
-          </>
-        ) : (
-          // Cánh khép
-          <>
-            <path d="M30 110 Q20 140 40 150" stroke={bodyColor} strokeWidth="0" fill={bodyColor} />
-            <ellipse cx="35" cy="130" rx="15" ry="30" fill={bodyColor} transform="rotate(10 35 130)" />
-            <ellipse cx="165" cy="130" rx="15" ry="30" fill={bodyColor} transform="rotate(-10 165 130)" />
-          </>
+        {/* Glasses Accessory */}
+        {glassesIcon && (
+          <div className="absolute top-[30%] left-1/2 transform -translate-x-1/2 z-20 pointer-events-none select-none drop-shadow-sm" style={{ fontSize: size * 0.35 }}>
+            {glassesIcon}
+          </div>
         )}
-      </svg>
+
+        {/* Outfit Accessory */}
+        {outfitIcon && (
+          <div className="absolute bottom-[10%] left-1/2 transform -translate-x-1/2 z-20 pointer-events-none select-none opacity-90" style={{ fontSize: size * 0.3 }}>
+            {outfitIcon}
+          </div>
+        )}
+
+        <svg
+          viewBox="0 0 200 200"
+          xmlns="http://www.w3.org/2000/svg"
+          className={`w-full h-full drop-shadow-xl transition-all duration-500 cursor-pointer ${animationClass}`}
+          onClick={handleClick}
+        >
+          {/* Chân */}
+          <path d="M70 170 L60 190 L80 190 Z" fill={feetColor} />
+          <path d="M130 170 L120 190 L140 190 Z" fill={feetColor} />
+
+          {/* Thân */}
+          <ellipse cx="100" cy="110" rx="70" ry="80" fill={bodyColor} />
+
+          {/* Tai */}
+          <path d="M40 60 L30 30 L70 50 Z" fill={bodyColor} />
+          <path d="M160 60 L170 30 L130 50 Z" fill={bodyColor} />
+
+          {/* Bụng */}
+          <ellipse cx="100" cy="130" rx="45" ry="50" fill={bellyColor} />
+
+          {/* Họa tiết lông bụng */}
+          <path d="M80 110 Q100 120 120 110" stroke={bodyColor} strokeWidth="3" fill="none" opacity="0.5" />
+          <path d="M80 130 Q100 140 120 130" stroke={bodyColor} strokeWidth="3" fill="none" opacity="0.5" />
+          <path d="M90 150 Q100 155 110 150" stroke={bodyColor} strokeWidth="3" fill="none" opacity="0.5" />
+
+          {/* Mắt (Tròng trắng) */}
+          <circle cx="70" cy="80" r="25" fill="white" stroke={bodyColor} strokeWidth="2" />
+          <circle cx="130" cy="80" r="25" fill="white" stroke={bodyColor} strokeWidth="2" />
+
+          {/* Con ngươi (Thay đổi theo cảm xúc) */}
+          {emotion === 'happy' ? (
+            // Mắt cười ^^
+            <>
+              <path d="M55 80 Q70 65 85 80" stroke="#1e3a8a" strokeWidth="4" fill="none" />
+              <path d="M115 80 Q130 65 145 80" stroke="#1e3a8a" strokeWidth="4" fill="none" />
+            </>
+          ) : emotion === 'sad' ? (
+            // Mắt buồn --
+            <>
+              <circle cx="70" cy="85" r="5" fill="#1e3a8a" />
+              <circle cx="130" cy="85" r="5" fill="#1e3a8a" />
+              {/* Mí mắt sụp xuống */}
+              <path d="M45 65 Q70 85 95 65" fill={bodyColor} opacity="0.3" />
+              <path d="M105 65 Q130 85 155 65" fill={bodyColor} opacity="0.3" />
+            </>
+          ) : blink ? (
+            // Nhắm mắt
+            <>
+              <line x1="50" y1="80" x2="90" y2="80" stroke="#1e3a8a" strokeWidth="4" />
+              <line x1="110" y1="80" x2="150" y2="80" stroke="#1e3a8a" strokeWidth="4" />
+            </>
+          ) : (
+            // Mở mắt bình thường
+            <>
+              <circle cx="70" cy="80" r={emotion === 'thinking' ? 8 : 10} fill="#1e3a8a">
+                {emotion === 'thinking' && (
+                  <animate attributeName="cy" values="80;75;80" dur="1s" repeatCount="indefinite" />
+                )}
+              </circle>
+              <circle cx="130" cy="80" r={emotion === 'thinking' ? 8 : 10} fill="#1e3a8a">
+                {emotion === 'thinking' && (
+                  <animate attributeName="cy" values="80;75;80" dur="1s" repeatCount="indefinite" begin="0.1s" />
+                )}
+              </circle>
+              <circle cx="75" cy="75" r="3" fill="white" />
+              <circle cx="135" cy="75" r="3" fill="white" />
+            </>
+          )}
+
+          {/* Mỏ */}
+          <path d="M90 100 L110 100 L100 115 Z" fill={beakColor} />
+
+          {/* Cánh */}
+          {emotion === 'happy' || isJumping ? (
+            // Cánh giơ lên
+            <>
+              <path d="M30 120 Q10 90 30 80" stroke={bodyColor} strokeWidth="10" strokeLinecap="round" fill="none" />
+              <path d="M170 120 Q190 90 170 80" stroke={bodyColor} strokeWidth="10" strokeLinecap="round" fill="none" />
+            </>
+          ) : (
+            // Cánh khép
+            <>
+              <path d="M30 110 Q20 140 40 150" stroke={bodyColor} strokeWidth="0" fill={bodyColor} />
+              <ellipse cx="35" cy="130" rx="15" ry="30" fill={bodyColor} transform="rotate(10 35 130)" />
+              <ellipse cx="165" cy="130" rx="15" ry="30" fill={bodyColor} transform="rotate(-10 165 130)" />
+            </>
+          )}
+        </svg>
+      </div>
     </div>
   );
 };
